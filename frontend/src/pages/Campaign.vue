@@ -38,7 +38,7 @@
     </div>
     <div class="mt-4">
       <AudienceListView
-        v-if="list.data?.data?.length > 0"
+        v-if="filterLength > 0 && list.data?.data?.length > 0"
         :columns="[
           {
             label: 'Name',
@@ -65,7 +65,7 @@
         "
       />
       <div
-        v-if="list.data?.data?.length == 0"
+        v-if="filterLength == 0 || list.data?.data?.length == 0"
         class="flex h-52 items-center justify-center"
       >
         <div
@@ -139,6 +139,7 @@ const { reload: reloadView, getDefaultView, getView } = viewsStore()
 const { $dialog, $socket, makeCall } = globalStore()
 const errorTitle = ref('')
 const errorMessage = ref('')
+const filterLength = ref(0)
 const route = useRoute()
 const router = useRouter()
 const { doctypeMeta } = getMeta('CRM Campaign')
@@ -313,10 +314,7 @@ function updateFilter(filters) {
   list.value.params = defaultParams.value
   list.value.params.filters = filters
   view.value.filters = filters
+  filterLength.value = Object.keys(filters).length
   list.value.reload()
-
-  // if (!route.query.view) {
-  //   createOrUpdateStandardView()
-  // }
 }
 </script>
