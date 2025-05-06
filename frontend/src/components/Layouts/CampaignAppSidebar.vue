@@ -72,7 +72,7 @@
       </div>
     </div>
     <div class="m-2 flex flex-col gap-1">
-      <div class="flex flex-col gap-2 mb-1">
+      <div class="mb-1 flex flex-col gap-2">
         <SignupBanner
           v-if="isDemoSite"
           :isSidebarCollapsed="isSidebarCollapsed"
@@ -195,44 +195,9 @@ const isDemoSite = ref(window.is_demo_site)
 
 const links = [
   {
-    label: 'Leads',
-    icon: LeadsIcon,
-    to: 'Leads',
-  },
-  {
-    label: 'Deals',
-    icon: DealsIcon,
-    to: 'Deals',
-  },
-  {
-    label: 'Contacts',
-    icon: ContactsIcon,
-    to: 'Contacts',
-  },
-  {
-    label: 'Organizations',
-    icon: OrganizationsIcon,
-    to: 'Organizations',
-  },
-  {
-    label: 'Notes',
-    icon: NoteIcon,
-    to: 'Notes',
-  },
-  {
-    label: 'Tasks',
-    icon: TaskIcon,
-    to: 'Tasks',
-  },
-  {
-    label: 'Call Logs',
-    icon: PhoneIcon,
-    to: 'Call Logs',
-  },
-  {
-    label: 'Email Templates',
-    icon: Email2Icon,
-    to: 'Email Templates',
+    label: 'Campaigns',
+    icon: 'bar-chart-2',
+    to: 'Campaigns',
   },
 ]
 
@@ -245,24 +210,9 @@ const allViews = computed(() => {
       views: links,
     },
   ]
-  if (getPublicViews().length) {
-    _views.push({
-      name: 'Public views',
-      opened: true,
-      views: parseView(getPublicViews()),
-    })
-  }
 
-  if (getPinnedViews().length) {
-    _views.push({
-      name: 'Pinned views',
-      opened: true,
-      views: parseView(getPinnedViews()),
-    })
-  }
   return _views
 })
-console.log('allViews', allViews.value)
 
 function parseView(views) {
   return views.map((view) => {

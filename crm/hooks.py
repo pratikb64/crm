@@ -297,6 +297,14 @@ standard_dropdown_items = [
 		"is_standard": 1,
 	},
 	{
+		"name1": "campaigns",
+		"label": "Campaigns",
+		"type": "Route",
+		"icon": "filter",
+		"route": "/campaigns",
+		"is_standard": 1,
+	},
+	{
 		"name1": "login_to_fc",
 		"label": "Login to Frappe Cloud",
 		"type": "Route",
