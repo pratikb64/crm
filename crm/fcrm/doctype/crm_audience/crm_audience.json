@@ -5,18 +5,43 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "section_break_ek7g"
+  "email",
+  "phone",
+  "first_name",
+  "last_name",
+  "source"
  ],
  "fields": [
   {
-   "fieldname": "section_break_ek7g",
-   "fieldtype": "Section Break"
+   "fieldname": "email",
+   "fieldtype": "Data",
+   "label": "Email"
+  },
+  {
+   "fieldname": "phone",
+   "fieldtype": "Phone",
+   "label": "Phone"
+  },
+  {
+   "fieldname": "first_name",
+   "fieldtype": "Data",
+   "label": "First Name"
+  },
+  {
+   "fieldname": "last_name",
+   "fieldtype": "Data",
+   "label": "Last Name"
+  },
+  {
+   "fieldname": "source",
+   "fieldtype": "Data",
+   "label": "Source"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-05-06 16:27:52.505836",
+ "modified": "2025-05-06 17:14:48.739640",
  "modified_by": "Administrator",
  "module": "FCRM",
  "name": "CRM Audience",
