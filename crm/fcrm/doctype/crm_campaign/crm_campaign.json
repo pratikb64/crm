@@ -34,13 +34,13 @@
    "fieldname": "status",
    "fieldtype": "Select",
    "label": "Status",
-   "options": "Active\nDraft\nIn-Active"
+   "options": "Active\nDraft\nInactive"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-05-06 12:30:27.881539",
+ "modified": "2025-05-07 16:17:59.391378",
  "modified_by": "Administrator",
  "module": "FCRM",
  "name": "CRM Campaign",

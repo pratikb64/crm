@@ -6,4 +6,53 @@ from frappe.model.document import Document
 
 
 class CRMAudience(Document):
-	pass
+	@staticmethod
+	def default_list_data():
+		columns = [
+			{
+				"label": "First Name",
+				"type": "Data",
+				"key": "first_name",
+				"width": "12rem",
+			},
+			{
+				"label": "Last Name",
+				"type": "Data",
+				"key": "last_name",
+				"width": "12rem",
+			},
+			{
+				"label": "Email",
+				"type": "Data",
+				"key": "email",
+				"width": "12rem",
+			},
+			{
+				"label": "Phone",
+				"type": "Data",
+				"key": "phone",
+				"width": "12rem",
+			},
+			{
+				"label": "Source",
+				"type": "Data",
+				"key": "source",
+				"width": "12rem",
+			},
+			{
+				"label": "Last Modified",
+				"type": "Datetime",
+				"key": "modified",
+				"width": "8rem",
+			},
+		]
+		rows = [
+			"name",
+			"first_name",
+			"last_name",
+			"email",
+			"phone",
+			"source",
+			"modified",
+		]
+		return {"columns": columns, "rows": rows}

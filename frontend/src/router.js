@@ -102,11 +102,32 @@ const routes = [
     component: () => import('@/pages/Campaigns.vue'),
   },
   {
-    path: '/campaigns/:campaignId',
+    path: '/campaigns/create',
+    name: 'Create Campaign',
+    component: () => import('@/pages/CreateNewCampaign.vue'),
+  },
+  {
+    path: '/campaigns/c/:campaignId',
     name: 'Campaign',
     component: () => import('@/pages/Campaign.vue'),
     props: true,
   },
+  {
+    path: '/campaigns/audiences',
+    name: 'Audiences',
+    component: () => import('@/pages/Audiences.vue'),
+  },
+  {
+    path: '/campaigns/audiences/create',
+    name: 'Create Audience',
+    component: () => import('@/pages/CreateNewAudience.vue'),
+  },
+  // {
+  //   path: '/audiences/:audienceId',
+  //   name: 'Audience',
+  //   component: () => import('@/pages/Audience.vue'),
+  //   props: true,
+  // },
   {
     path: '/:invalidpath',
     name: 'Invalid Page',

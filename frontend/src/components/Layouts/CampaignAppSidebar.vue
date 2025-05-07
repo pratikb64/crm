@@ -199,6 +199,11 @@ const links = [
     icon: 'bar-chart-2',
     to: 'Campaigns',
   },
+  {
+    label: 'Audiences',
+    icon: 'users',
+    to: 'Audiences',
+  },
 ]
 
 const allViews = computed(() => {

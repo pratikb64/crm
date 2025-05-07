@@ -1,29 +1,18 @@
 <template>
   <CampaignLayoutHeader>
     <template #left-header>
-      <Breadcrumbs
-        :items="[
-          {
-            label: 'Campaigns',
-            route: { name: 'Campaigns' },
-          },
-        ]"
-      >
+      <Breadcrumbs :items="breadcrumbs">
         <template #prefix="{ item }">
           <Icon v-if="item.icon" :icon="item.icon" class="mr-2 h-4" />
         </template>
       </Breadcrumbs>
     </template>
     <template #right-header>
-      <CustomActions
-        v-if="campaignsListView?.customListActions"
-        :actions="campaignsListView.customListActions"
-      />
       <Button
         variant="solid"
         :label="__('Create')"
-        :loading="isCampaignCreating"
-        @click="createNewCampaign"
+        :loading="isAudienceCreating"
+        @click="createNewAudience"
       >
         <template #prefix><FeatherIcon name="plus" class="h-4" /></template>
       </Button>
@@ -31,24 +20,24 @@
   </CampaignLayoutHeader>
   <ViewControls
     ref="viewControls"
-    v-model="campaigns"
+    v-model="audiences"
     v-model:loadMore="loadMore"
     v-model:resizeColumn="triggerResize"
     v-model:updatedPageCount="updatedPageCount"
-    doctype="CRM Campaign"
+    doctype="CRM Audience"
   />
-  <CampaignsListView
-    ref="campaignsListView"
-    v-if="campaigns.data && campaigns.data.total_count > 0"
-    v-model="campaigns.data.page_length_count"
-    v-model:list="campaigns"
+  <AudiencesListView
+    ref="audiencesListView"
+    v-if="audiences.data && audiences.data.total_count > 0"
+    v-model="audiences.data.page_length_count"
+    v-model:list="audiences"
     :rows="rows"
-    :columns="campaigns.data.columns"
+    :columns="audiences.data.columns"
     :options="{
       showTooltip: false,
       resizeColumn: true,
-      rowCount: campaigns.data.row_count,
-      totalCount: campaigns.data.total_count,
+      rowCount: audiences.data.row_count,
+      totalCount: audiences.data.total_count,
     }"
     @loadMore="() => loadMore++"
     @columnWidthUpdated="() => triggerResize++"
@@ -61,18 +50,18 @@
     "
   />
   <div
-    v-if="campaigns.data && campaigns.data.total_count == 0"
+    v-if="audiences.data && audiences.data.total_count == 0"
     class="flex h-full items-center justify-center"
   >
     <div
       class="flex flex-col items-center gap-3 text-xl font-medium text-ink-gray-4"
     >
       <LeadsIcon class="h-10 w-10" />
-      <span>{{ __('No {0} Found', [__('Campaigns')]) }}</span>
+      <span>{{ __('No {0} Found', [__('Audiences')]) }}</span>
       <Button
         :label="__('Create')"
-        :loading="isCampaignCreating"
-        @click="createNewCampaign"
+        :loading="isAudienceCreating"
+        @click="createNewAudience"
       >
         <template #prefix><FeatherIcon name="plus" class="h-4" /></template>
       </Button>
@@ -81,66 +70,60 @@
 </template>
 
 <script setup>
-import ViewBreadcrumbs from '@/components/ViewBreadcrumbs.vue'
-import MultipleAvatar from '@/components/MultipleAvatar.vue'
-import CustomActions from '@/components/CustomActions.vue'
-import EmailAtIcon from '@/components/Icons/EmailAtIcon.vue'
-import PhoneIcon from '@/components/Icons/PhoneIcon.vue'
-import NoteIcon from '@/components/Icons/NoteIcon.vue'
-import TaskIcon from '@/components/Icons/TaskIcon.vue'
-import CommentIcon from '@/components/Icons/CommentIcon.vue'
-import IndicatorIcon from '@/components/Icons/IndicatorIcon.vue'
-import LeadsIcon from '@/components/Icons/LeadsIcon.vue'
+import Icon from '@/components/Icon.vue'
 import CampaignLayoutHeader from '@/components/CampaignLayoutHeader.vue'
+import {
+  errorMessage as _errorMessage,
+  setupCustomizations,
+  createToast,
+} from '@/utils'
+import { Breadcrumbs, FormControl, Button } from 'frappe-ui'
+import { ref, computed } from 'vue'
+import AudiencesListView from '@/components/ListViews/AudiencesListView.vue'
+import { createResource } from 'frappe-ui'
+import CustomActions from '@/components/CustomActions.vue'
+import LeadsIcon from '@/components/Icons/LeadsIcon.vue'
 import ViewControls from '@/components/ViewControls.vue'
 import { getMeta } from '@/stores/meta'
-import { globalStore } from '@/stores/global'
 import { usersStore } from '@/stores/users'
 import { statusesStore } from '@/stores/statuses'
-import { callEnabled } from '@/composables/settings'
-import { formatDate, timeAgo, website, formatTime } from '@/utils'
-import { Breadcrumbs, createResource } from 'frappe-ui'
 import { useRouter } from 'vue-router'
-import { ref, computed, reactive, h, watch } from 'vue'
-import CampaignsListView from '@/components/ListViews/CampaignsListView.vue'
-import { capture } from '@/telemetry'
 
 const { getFormattedPercent, getFormattedFloat, getFormattedCurrency } =
-  getMeta('CRM Campaign')
+  getMeta('CRM Audience')
 const { getUser } = usersStore()
 const { getLeadStatus } = statusesStore()
 const router = useRouter()
 
-const campaignsListView = ref(null)
-const isCampaignCreating = ref(false)
-
-// leads data is loaded in the ViewControls component
-const campaigns = ref({})
+const audiences = ref({})
 const loadMore = ref(1)
 const triggerResize = ref(1)
 const updatedPageCount = ref(20)
 const viewControls = ref(null)
 
-watch(campaigns, () => {
-  console.log('campaigns', campaigns.value)
-  console.log('campaignsListView', campaignsListView.value)
+const list = createResource({
+  url: 'crm.api.audience.get_audiences',
+  params: {
+    filters: [],
+    limit: 20,
+  },
+  auto: false,
 })
 
-// Rows
 const rows = computed(() => {
-  if (!campaigns.value?.data?.data) return []
-  return parseRows(campaigns.value?.data.data, campaigns.value.data.columns)
+  if (!audiences.value?.data?.data) return []
+  return parseRows(audiences.value?.data.data, audiences.value.data.columns)
 })
 
 function parseRows(rows, columns = []) {
-  let view_type = campaigns.value.data.view_type
+  let view_type = audiences.value.data.view_type
   let key = view_type === 'kanban' ? 'fieldname' : 'key'
   let type = view_type === 'kanban' ? 'fieldtype' : 'type'
 
-  return rows.map((campaign) => {
+  return rows.map((audience) => {
     let _rows = {}
-    campaigns.value?.data.rows.forEach((row) => {
-      _rows[row] = campaign[row]
+    audiences.value?.data.rows.forEach((row) => {
+      _rows[row] = audience[row]
 
       let fieldType = columns?.find((col) => (col[key] || col.value) == row)?.[
         type
@@ -152,7 +135,7 @@ function parseRows(rows, columns = []) {
         !['modified', 'creation'].includes(row)
       ) {
         _rows[row] = formatDate(
-          campaign[row],
+          audience[row],
           '',
           true,
           fieldType == 'Datetime',
@@ -160,15 +143,15 @@ function parseRows(rows, columns = []) {
       }
 
       if (fieldType && fieldType == 'Float') {
-        _rows[row] = getFormattedFloat(row, campaign)
+        _rows[row] = getFormattedFloat(row, audience)
       }
 
-      if (row == 'campaign_name') {
-        _rows[row] = campaign.campaign_name
+      if (row == 'audience_name') {
+        _rows[row] = audience.audience_name
       } else if (['modified', 'creation'].includes(row)) {
         _rows[row] = {
-          label: formatDate(campaign[row]),
-          timeAgo: __(timeAgo(campaign[row])),
+          label: formatDate(audience[row]),
+          timeAgo: __(timeAgo(audience[row])),
         }
       }
     })
@@ -176,7 +159,14 @@ function parseRows(rows, columns = []) {
   })
 }
 
-function createNewCampaign() {
-  router.push({ name: 'Create Campaign' })
+function createNewAudience() {
+  router.push({ name: 'Create Audience' })
 }
+
+const breadcrumbs = computed(() => {
+  let items = [{ label: __('Audiences'), route: { name: 'Audiences' } }]
+  return items
+})
+
+const isAudienceCreating = ref(false)
 </script>
