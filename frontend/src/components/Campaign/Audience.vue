@@ -1,6 +1,6 @@
 <template>
-  <AudienceListView />
+  <AudiencesListView />
 </template>
 <script setup>
-import AudienceListView from '@/components/ListViews/AudienceListView.vue'
+import AudiencesListView from '@/components/ListViews/AudiencesListView.vue'
 </script>

@@ -122,12 +122,12 @@ const routes = [
     name: 'Create Audience',
     component: () => import('@/pages/CreateNewAudience.vue'),
   },
-  // {
-  //   path: '/audiences/:audienceId',
-  //   name: 'Audience',
-  //   component: () => import('@/pages/Audience.vue'),
-  //   props: true,
-  // },
+  {
+    path: '/campaigns/audiences/:audienceId',
+    name: 'Audience',
+    component: () => import('@/pages/Audience.vue'),
+    props: true,
+  },
   {
     path: '/:invalidpath',
     name: 'Invalid Page',

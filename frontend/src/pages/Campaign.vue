@@ -37,33 +37,7 @@
       <Filter v-model="list" :doctype="'CRM Lead'" @update="updateFilter" />
     </div>
     <div class="mt-4">
-      <AudienceListView
-        v-if="filterLength > 0 && list.data?.data?.length > 0"
-        :columns="[
-          {
-            label: 'Name',
-            type: 'Data',
-            key: 'lead_name',
-            width: '12rem',
-          },
-          {
-            label: 'Email',
-            type: 'Data',
-            key: 'email',
-            width: '12rem',
-          },
-          {
-            label: 'Mobile No',
-            type: 'Data',
-            key: 'mobile_no',
-            width: '11rem',
-          },
-        ]"
-        :rows="list.data?.data"
-        @update:selections="
-          (selections) => emit('selectionsChanged', selections)
-        "
-      />
+      <!-- TODO: audience doctype view -->
       <div
         v-if="filterLength == 0 || list.data?.data?.length == 0"
         class="flex h-52 items-center justify-center"
@@ -106,7 +80,6 @@ import { computed, ref, watch, onMounted } from 'vue'
 import Filter from '@/components/Filter.vue'
 import { useRoute, useRouter } from 'vue-router'
 import { viewsStore } from '@/stores/views'
-import AudienceListView from '@/components/ListViews/AudienceListView.vue'
 import { globalStore } from '@/stores/global'
 import { getMeta } from '@/stores/meta'
 import ErrorPage from '@/components/ErrorPage.vue'

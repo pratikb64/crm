@@ -14,5 +14,6 @@
             "username": "root",
             "password": "123"
         }
-    ]
+    ],
+    "python.languageServer": "None"
 }

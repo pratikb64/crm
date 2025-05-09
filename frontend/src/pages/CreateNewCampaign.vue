@@ -42,33 +42,7 @@
       <Filter v-model="list" :doctype="'CRM Lead'" @update="updateFilter" />
     </div>
     <div class="mt-4">
-      <AudienceListView
-        v-if="filterLength > 0 && list.data?.data?.length > 0"
-        :columns="[
-          {
-            label: 'Name',
-            type: 'Data',
-            key: 'lead_name',
-            width: '12rem',
-          },
-          {
-            label: 'Email',
-            type: 'Data',
-            key: 'email',
-            width: '12rem',
-          },
-          {
-            label: 'Mobile No',
-            type: 'Data',
-            key: 'mobile_no',
-            width: '11rem',
-          },
-        ]"
-        :rows="list.data?.data"
-        @update:selections="
-          (selections) => emit('selectionsChanged', selections)
-        "
-      />
+      <!-- TODO: Audience doctype list  -->
       <div
         v-if="filterLength == 0 || list.data?.data?.length == 0"
         class="flex h-52 items-center justify-center"
@@ -111,17 +85,10 @@ import { computed, ref, reactive } from 'vue'
 import Filter from '@/components/Filter.vue'
 import { useRoute, useRouter } from 'vue-router'
 import { viewsStore } from '@/stores/views'
-import AudienceListView from '@/components/ListViews/AudienceListView.vue'
 import { globalStore } from '@/stores/global'
 import { getMeta } from '@/stores/meta'
 import ErrorPage from '@/components/ErrorPage.vue'
 
-const props = defineProps({
-  campaignId: {
-    type: String,
-    required: true,
-  },
-})
 const list = defineModel()
 const view = ref({
   name: '',
@@ -206,10 +173,6 @@ const onCreateCampaign = () => {
   })
 }
 
-const title = computed(() => {
-  let t = doctypeMeta['CRM Campaign']?.title_field || 'name'
-  return campaign.data?.[t] || props.campaignId
-})
 const pageLength = computed(() => list.value?.data?.page_length)
 const pageLengthCount = computed(() => list.value?.data?.page_length_count)
 
@@ -224,7 +187,6 @@ list.value = createResource({
       doctype: 'CRM Lead',
       filters: params.filters,
       order_by: params.order_by,
-      default_filters: props.filters,
       view: {
         custom_view_name: cv?.name || '',
         view_type: cv?.type || route.params.viewType || 'list',
@@ -292,7 +254,6 @@ function getParams() {
     doctype: 'CRM Lead',
     filters: filters,
     order_by: order_by,
-    default_filters: props.filters,
     view: {
       custom_view_name: view_name,
       view_type: view_type,
