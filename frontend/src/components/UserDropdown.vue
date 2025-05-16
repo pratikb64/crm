@@ -13,7 +13,7 @@
       >
         <BrandLogo v-model="brand" class="h-8 max-w-16 flex-shrink-0" />
         <div
-          class="flex flex-1 flex-col text-left duration-300 ease-in-out truncate"
+          class="flex flex-1 flex-col truncate text-left duration-300 ease-in-out"
           :class="
             isCollapsed
               ? 'ml-0 w-0 overflow-hidden opacity-0'
@@ -21,11 +21,11 @@
           "
         >
           <div
-            class="text-base font-medium leading-none text-ink-gray-9 truncate"
+            class="truncate text-base font-medium leading-none text-ink-gray-9"
           >
             {{ __(brand.name || 'CRM') }}
           </div>
-          <div class="mt-1 text-sm leading-none text-ink-gray-7 truncate">
+          <div class="mt-1 truncate text-sm leading-none text-ink-gray-7">
             {{ user.full_name }}
           </div>
         </div>
@@ -60,6 +60,10 @@ import { confirmLoginToFrappeCloud } from '@/composables/frappecloud'
 import { Dropdown } from 'frappe-ui'
 import { theme, toggleTheme } from '@/stores/theme'
 import { computed, h, markRaw } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+
+const router = useRouter()
+const route = useRoute()
 
 const props = defineProps({
   isCollapsed: {
@@ -170,6 +174,19 @@ function getStandardItem(item) {
         icon: item.icon,
         label: __(item.label),
         onClick: () => logout.submit(),
+      }
+    case 'campaigns':
+      if (route.path.includes('/campaigns')) {
+        return {
+          icon: 'arrow-left',
+          label: __('Go back to CRM'),
+          onClick: () => router.push('/leads/view'),
+        }
+      }
+      return {
+        icon: item.icon,
+        label: __(item.label),
+        onClick: () => router.push('/campaigns'),
       }
   }
 }

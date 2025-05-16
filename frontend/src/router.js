@@ -97,6 +97,22 @@ const routes = [
     component: () => import('@/pages/Welcome.vue'),
   },
   {
+    path: '/campaigns',
+    name: 'Campaigns',
+    component: () => import('@/pages/Campaigns.vue'),
+  },
+  {
+    path: '/campaigns/create',
+    name: 'Create Campaign',
+    component: () => import('@/pages/CreateNewCampaign.vue'),
+  },
+  {
+    path: '/campaigns/c/:campaignId',
+    name: 'Campaign',
+    component: () => import('@/pages/Campaign.vue'),
+    props: true,
+  },
+  {
     path: '/:invalidpath',
     name: 'Invalid Page',
     component: () => import('@/pages/InvalidPage.vue'),
@@ -131,7 +147,11 @@ router.beforeEach(async (to, from, next) => {
     route_name = route_name || 'Leads'
 
     if (name && !is_standard) {
-      next({ name: route_name, params: { viewType: type }, query: { view: name } })
+      next({
+        name: route_name,
+        params: { viewType: type },
+        query: { view: name },
+      })
     } else {
       next({ name: route_name, params: { viewType: type } })
     }
