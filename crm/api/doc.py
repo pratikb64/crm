@@ -4,12 +4,14 @@ import frappe
 from frappe import _
 from frappe.custom.doctype.property_setter.property_setter import make_property_setter
 from frappe.model import no_value_fields
+from frappe.model.delete_doc import clear_references, delete_dynamic_links, delete_references
 from frappe.model.document import get_controller
 from frappe.utils import make_filter_tuple
 from pypika import Criterion
 
 from crm.api.views import get_views
 from crm.fcrm.doctype.crm_form_script.crm_form_script import get_form_script
+from crm.utils import get_dynamic_linked_docs, get_linked_docs
 
 
 @frappe.whitelist()
@@ -726,3 +728,108 @@ def getCounts(d, doctype):
 		"FCRM Note", filters={"reference_doctype": doctype, "reference_docname": d.get("name")}
 	)
 	return d
+
+
+@frappe.whitelist()
+def getLinkedDocs(doctype, docname):
+	"""
+	Get all linked documents for a given document.
+
+	#### Parameters
+	doctype : str
+		DocType of the document
+	docname : str
+		Name of the document
+
+	#### Returns
+		List of all linked documents
+	"""
+	doc = frappe.get_doc(doctype, docname)
+	linked_docs = get_linked_docs(doc)
+	dynamic_linked_docs = get_dynamic_linked_docs(doc)
+	linked_docs.extend(dynamic_linked_docs)
+	return linked_docs
+
+
+@frappe.whitelist()
+def removeLinkedDocReference(doctype=None, docname=None,removeAll=False):
+	"""
+	Remove reference to a doc in all linked documents.
+
+	#### Parameters
+	doctype : str
+		DocType of the document to be removed
+	docname : str
+		Name of the document to be removed
+	removeAll : bool
+		If set to True, will remove the reference to the document in all linked documents.
+	"""
+
+	if (not doctype or not docname) and not removeAll:
+		return "Invalid doctype or docname"
+	
+	if removeAll:
+		linked_docs = getLinkedDocs(doctype, docname)
+		for linked_doc in linked_docs:
+			linked_doc_data = frappe.get_doc(linked_doc["reference_doctype"], linked_doc["reference_docname"])
+			linked_doc_data.update({
+				"reference_doctype": None,
+				"reference_docname": None,
+			})
+			linked_doc_data.save(ignore_permissions=True)
+		return "success"
+	else:
+		linked_doc_data = frappe.get_doc(doctype, docname)
+		linked_doc_data.update({
+			"reference_doctype": None,
+			"reference_docname": None,
+		})
+		linked_doc_data.save(ignore_permissions=True)
+		return "success"
+
+@frappe.whitelist()
+def deleteLinkedDocReference(doctype=None, docname=None,removeAll=False):
+	"""
+	Delete a document and its references in all linked documents.
+
+	#### Parameters
+	doctype : str
+		DocType of the document to be deleted
+	docname : str
+		Name of the document to be deleted
+	removeAll : bool
+		If set to True, will delete the document in all linked documents.
+	"""
+	if (not doctype or not docname) and not removeAll:
+		return "Invalid doctype or docname"
+	return "success"
+
+
+# @frappe.whitelist()
+# def getLinkedDocs(doctype, docname):
+# 	# delete_dynamic_links(doctype, docname)
+# 	doc = frappe.get_doc(doctype, docname)
+# 	# linked_docs = get_linked_docs(doc)
+# 	# print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ linked_docs", linked_docs)
+# 	# for linked_doc in linked_docs:
+# 	# 	print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ linked_doc", linked_doc)
+# 	# 	clear_references(
+# 	# 		linked_doc["doc"].doctype, linked_doc["reference_doctype"], linked_doc["reference_docname"]
+# 	# 	)
+
+# 	linked_docs = get_dynamic_linked_docs(doc)
+# 	print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ linked_docs", linked_docs)
+# 	# delete_dynamic_links(doctype, docname)
+# 	for linked_doc in linked_docs:
+# 		print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ linked_doc", linked_doc)
+# 		linked_doc_data = frappe.get_doc(linked_doc["reference_doctype"], linked_doc["reference_docname"])
+# 		linked_doc_data.update({
+# 			"reference_doctype": None,
+# 			"reference_docname": None,
+# 		})
+# 		linked_doc_data.save(ignore_permissions=True)
+# 		# delete_references(
+# 		# 	linked_doc["doc"].doctype, linked_doc["reference_doctype"], linked_doc["reference_docname"]
+# 		# )
+# 	return "done"
+# 	# return linked_docs
