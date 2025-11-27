@@ -56,7 +56,10 @@
         />
       </template>
     </Tabs>
-    <Resizer class="flex flex-col justify-between border-l" side="right">
+    <Resizer
+      class="flex flex-col justify-between border-l rtl:border-r"
+      side="right"
+    >
       <div
         class="flex h-10.5 cursor-copy items-center border-b px-5 py-2.5 text-lg font-medium text-ink-gray-9"
         @click="copyToClipboard(leadId)"
@@ -294,10 +297,8 @@ const showDeleteLinkedDocModal = ref(false)
 const showConvertToDealModal = ref(false)
 const showFilesUploader = ref(false)
 
-const { triggerOnChange, assignees, permissions, document, scripts, error } = useDocument(
-  'CRM Lead',
-  props.leadId,
-)
+const { triggerOnChange, assignees, permissions, document, scripts, error } =
+  useDocument('CRM Lead', props.leadId)
 
 const canDelete = computed(() => permissions.data?.permissions?.delete || false)
 

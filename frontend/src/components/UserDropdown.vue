@@ -34,7 +34,7 @@
           :class="
             isCollapsed
               ? 'ml-0 w-0 overflow-hidden opacity-0'
-              : 'ml-2 w-auto opacity-100'
+              : 'ml-2 w-auto opacity-100 rtl:mr-2 rtl:ml-0'
           "
         >
           <FeatherIcon
