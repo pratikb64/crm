@@ -8,6 +8,25 @@ from twilio.rest import Client
 
 
 class CRMTwilioSettings(Document):
+	# begin: auto-generated types
+	# This code is auto-generated. Do not modify anything in this block.
+
+	from typing import TYPE_CHECKING
+
+	if TYPE_CHECKING:
+		from frappe.types import DF
+
+		account_sid: DF.Data | None
+		api_key: DF.Data | None
+		api_secret: DF.Password | None
+		app_name: DF.Data | None
+		auth_token: DF.Password | None
+		enabled: DF.Check
+		record_calls: DF.Check
+		twilio_apps: DF.Data | None
+		twiml_sid: DF.Data | None
+	# end: auto-generated types
+
 	friendly_resource_name = "Frappe CRM"  # System creates TwiML app & API keys with this name.
 
 	def validate(self):
@@ -21,7 +40,8 @@ class CRMTwilioSettings(Document):
 
 		twilio = Client(self.account_sid, self.get_password("auth_token"))
 		self.set_api_credentials(twilio)
-		self.set_application_credentials(twilio)
+		self.set_application_credentials(twilio, self.app_name)
+		self.fetch_applications(twilio)
 		self.reload()
 
 	def validate_twilio_account(self):
@@ -45,11 +65,14 @@ class CRMTwilioSettings(Document):
 			{"api_key": self.api_key, "api_secret": self.api_secret},
 		)
 
-	def set_application_credentials(self, twilio):
+	def set_application_credentials(self, twilio, app_name):
 		"""Generate TwiML app credentials if not exist and update them."""
-		credentials = self.get_application(twilio) or self.create_application(twilio)
+		credentials = self.get_application(twilio, app_name) or self.create_application(twilio)
 		self.twiml_sid = credentials.sid
-		frappe.db.set_value("CRM Twilio Settings", "CRM Twilio Settings", "twiml_sid", self.twiml_sid)
+		self.app_name = credentials.friendly_name
+		frappe.db.set_single_value(
+			"CRM Twilio Settings", {"twiml_sid": self.twiml_sid, "app_name": self.app_name}
+		)
 
 	def create_api_key(self, twilio):
 		"""Create API keys in twilio account."""
@@ -67,7 +90,13 @@ class CRMTwilioSettings(Document):
 		"""Get TwiML App from twilio account if exists."""
 		friendly_name = friendly_name or self.friendly_resource_name
 		applications = twilio.applications.list(friendly_name)
-		return applications and applications[0]
+		default_application = twilio.applications.list(self.friendly_resource_name)
+
+		if applications:
+			return applications[0]
+		if default_application:
+			return default_application[0]
+		return None
 
 	def create_application(self, twilio, friendly_name=None):
 		"""Create TwilML App in twilio account."""
@@ -76,6 +105,14 @@ class CRMTwilioSettings(Document):
 			voice_method="POST", voice_url=self.get_twilio_voice_url(), friendly_name=friendly_name
 		)
 		return application
+
+	def fetch_applications(self, twilio):
+		applications = [app.friendly_name for app in twilio.applications.list()]
+		frappe.db.set_single_value(
+			"CRM Twilio Settings",
+			"twilio_apps",
+			",".join(applications),
+		)
 
 
 def get_public_url(path: str | None = None):

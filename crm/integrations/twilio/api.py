@@ -164,3 +164,15 @@ def get_datetime_from_timestamp(timestamp):
 	system_timezone = frappe.utils.get_system_timezone()
 	converted_datetime = datetime_utc_tz.astimezone(ZoneInfo(system_timezone))
 	return frappe.utils.format_datetime(converted_datetime, "yyyy-MM-dd HH:mm:ss")
+
+
+@frappe.whitelist()
+def fetch_applications():
+	twilio = Twilio.get_twilio_client()
+	applications = [app.friendly_name for app in twilio.applications.list()]
+	frappe.db.set_single_value(
+		"CRM Twilio Settings",
+		"twilio_apps",
+		",".join(applications),
+	)
+	return applications
