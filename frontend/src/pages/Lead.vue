@@ -42,15 +42,17 @@
     </template>
   </LayoutHeader>
   <div v-if="doc.name" class="flex h-full overflow-hidden">
-    <Tabs as="div" v-model="tabIndex" :tabs="tabs">
-      <template #tab-panel>
+    <Tabs as="div" v-model="tabIndex" :tabs="tabs" class="w-full h-full">
+      <template #tab-panel="{ tab }">
         <Activities
           ref="activities"
           doctype="CRM Lead"
           :docname="leadId"
           :tabs="tabs"
+          :currentTab="tab"
           v-model:reload="reload"
           v-model:tabIndex="tabIndex"
+          @changeTab="changeTabTo"
           @beforeSave="saveChanges"
           @afterSave="reloadAssignees"
         />
@@ -294,10 +296,8 @@ const showDeleteLinkedDocModal = ref(false)
 const showConvertToDealModal = ref(false)
 const showFilesUploader = ref(false)
 
-const { triggerOnChange, assignees, permissions, document, scripts, error } = useDocument(
-  'CRM Lead',
-  props.leadId,
-)
+const { triggerOnChange, assignees, permissions, document, scripts, error } =
+  useDocument('CRM Lead', props.leadId)
 
 const canDelete = computed(() => permissions.data?.permissions?.delete || false)
 
