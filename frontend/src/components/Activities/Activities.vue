@@ -10,10 +10,7 @@
     :whatsappBox="whatsappBox"
     :modalRef="modalRef"
   />
-  <FadedScrollableDiv
-    :maskHeight="30"
-    class="flex flex-col flex-1 overflow-y-auto"
-  >
+  <FadedScrollableDiv class="flex flex-col flex-1 overflow-y-auto">
     <div
       v-if="all_activities?.loading"
       class="flex flex-1 flex-col items-center justify-center gap-3 text-xl font-medium text-ink-gray-4"
@@ -528,9 +525,13 @@ const props = defineProps({
     type: Array,
     default: () => [],
   },
+  currentTab: {
+    type: Object,
+    required: true,
+  },
 })
 
-const emit = defineEmits(['beforeSave', 'afterSave'])
+const emit = defineEmits(['beforeSave', 'afterSave', 'changeTab'])
 
 const route = useRoute()
 
@@ -545,13 +546,10 @@ const reload_email = ref(false)
 const modalRef = ref(null)
 const showFilesUploader = ref(false)
 
-const title = computed(() => props.tabs?.[tabIndex.value]?.name || 'Activity')
+const title = computed(() => props.currentTab?.name || 'Activity')
 
 const changeTabTo = (tabName) => {
-  const tabNames = props.tabs?.map((tab) => tab.name?.toLowerCase())
-  const index = tabNames?.indexOf(tabName)
-  if (index == -1) return
-  tabIndex.value = index
+  emit('changeTab', tabName)
 }
 
 const all_activities = createResource({
