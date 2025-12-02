@@ -749,3 +749,46 @@ export function orderSensitiveEqual(a, b) {
   for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false
   return true
 }
+
+/**
+ * @param {Object} config - Configuration object
+ * @param {Ref<boolean>} config.isConfirmingDelete - Ref to track confirmation state
+ * @param {Function} config.onConfirmDelete - Callback when delete is confirmed
+ * @returns {Array} Array of option objects for use in dropdowns
+ */
+export function ConfirmDelete({ isConfirmingDelete, onConfirmDelete }) {
+  return [
+    {
+      label: 'Delete',
+      component: (props) =>
+        TemplateOption({
+          option: 'Delete',
+          icon: 'trash-2',
+          active: props.active,
+          variant: 'grey',
+          onClick: (event) => {
+            event.preventDefault()
+            event.stopImmediatePropagation()
+            isConfirmingDelete.value = true
+          },
+        }),
+      condition: () => !isConfirmingDelete.value,
+    },
+    {
+      label: 'Confirm Delete',
+      component: (props) =>
+        TemplateOption({
+          option: 'Confirm Delete',
+          icon: 'trash-2',
+          active: props.active,
+          variant: 'danger',
+          onClick: () => {
+            onConfirmDelete()
+            // Reset state after confirming
+            isConfirmingDelete.value = false
+          },
+        }),
+      condition: () => isConfirmingDelete.value,
+    },
+  ]
+}
