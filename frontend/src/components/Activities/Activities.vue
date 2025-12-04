@@ -10,7 +10,7 @@
     :whatsappBox="whatsappBox"
     :modalRef="modalRef"
   />
-  <FadedScrollableDiv class="flex flex-col flex-1 overflow-y-auto">
+  <FadedScrollableDiv class="flex flex-col h-full overflow-y-auto">
     <div
       v-if="all_activities?.loading"
       class="flex flex-1 flex-col items-center justify-center gap-3 text-xl font-medium text-ink-gray-4"

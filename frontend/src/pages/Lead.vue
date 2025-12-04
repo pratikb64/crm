@@ -45,28 +45,26 @@
     <Tabs
       v-model="tabIndex"
       :tabs="tabs"
-      class="flex flex-1 overflow-hidden flex-col [&_[role='tablist']]:px-3 [&_[role='tabpanel']:not([hidden])]:flex [&_[role='tabpanel']:not([hidden])]:grow"
+      class="flex flex-1 overflow-hidden flex-col [&_[role='tablist']]:gap-3 [&_[role='tablist']]:px-3 [&_[role='tabpanel']:not([hidden])]:flex [&_[role='tabpanel']:not([hidden])]:grow"
     >
       <template #tab-panel="{ tab }">
-        <div class="flex flex-col flex-1">
-          <Activities
-            ref="activities"
-            doctype="CRM Lead"
-            :docname="leadId"
-            :tabs="tabs"
-            :currentTab="tab"
-            v-model:reload="reload"
-            v-model:tabIndex="tabIndex"
-            @changeTab="changeTabTo"
-            @beforeSave="saveChanges"
-            @afterSave="reloadAssignees"
-          />
-        </div>
+        <Activities
+          ref="activities"
+          doctype="CRM Lead"
+          :docname="leadId"
+          :tabs="tabs"
+          :currentTab="tab"
+          v-model:reload="reload"
+          v-model:tabIndex="tabIndex"
+          @changeTab="changeTabTo"
+          @beforeSave="saveChanges"
+          @afterSave="reloadAssignees"
+        />
       </template>
     </Tabs>
     <Resizer class="flex flex-col justify-between border-l" side="right">
       <div
-        class="flex h-10.5 cursor-copy items-center border-b px-5 py-2.5 text-lg font-medium text-ink-gray-9"
+        class="flex h-[45px] cursor-copy items-center border-b px-5 py-2.5 text-lg font-medium text-ink-gray-9"
         @click="copyToClipboard(leadId)"
       >
         {{ __(leadId) }}

@@ -6,7 +6,12 @@
       'border-outline-gray-modals': hasTabs,
     }"
   >
-    <Tabs as="div" v-model="tabIndex" :tabs="tabs">
+    <Tabs
+      as="div"
+      v-model="tabIndex"
+      :tabs="tabs"
+      :class="!hasTabs ? `[&_[role='tablist']]:hidden` : ''"
+    >
       <template #tab-panel="{ tab }">
         <div
           class="sections overflow-hidden"

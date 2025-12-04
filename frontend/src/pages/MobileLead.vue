@@ -58,7 +58,12 @@
     </div>
   </div>
   <div v-if="doc.name" class="flex h-full overflow-hidden">
-    <Tabs as="div" v-model="tabIndex" :tabs="tabs" class="overflow-auto">
+    <Tabs
+      as="div"
+      v-model="tabIndex"
+      :tabs="tabs"
+      class="flex flex-1 overflow-auto flex-col [&_[role='tablist']]:gap-3 [&_[role='tablist']]:px-3 [&_[role='tabpanel']:not([hidden])]:flex [&_[role='tabpanel']:not([hidden])]:grow"
+    >
       <template #tab-panel="{ tab }">
         <div v-if="tab.name == 'Details'">
           <SLASection
@@ -88,6 +93,7 @@
           v-model:tabIndex="tabIndex"
           @beforeSave="saveChanges"
           @afterSave="reloadAssignees"
+          :currentTab="tab"
         />
       </template>
     </Tabs>
