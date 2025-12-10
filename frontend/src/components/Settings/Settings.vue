@@ -235,7 +235,7 @@ const tabs = computed(() => {
   })
 })
 
-const activeTab = ref(tabs.value[0].items[0])
+const activeTab = ref(tabs.value[4].items[1])
 
 function setActiveTab(tabName) {
   activeTab.value =
