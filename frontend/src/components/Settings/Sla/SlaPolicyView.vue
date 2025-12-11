@@ -59,7 +59,6 @@
               v-model="slaData.sla_name"
               required
               @change="validateSlaData('sla_name')"
-              :disabled="Boolean(step.data)"
               maxlength="50"
             />
             <ErrorMessage :message="slaDataErrors.sla_name" class="mt-2" />
@@ -242,6 +241,8 @@ import {
   Button,
   Checkbox,
   ConfirmDialog,
+  createDocumentResource,
+  createResource,
   DatePicker,
   ErrorMessage,
   FeatherIcon,
@@ -253,10 +254,16 @@ import {
   Switch,
   toast,
 } from 'frappe-ui'
-import { inject, ref } from 'vue'
+import { inject, onMounted, onUnmounted, ref, watch } from 'vue'
 import SettingsLayoutBase from '../../Layouts/SettingsLayoutBase.vue'
-import { slaData, slaDataErrors, validateSlaData } from './utils'
+import {
+  resetSlaDataErrors,
+  slaData,
+  slaDataErrors,
+  validateSlaData,
+} from './utils'
 import SlaAssignmentConditions from './SlaAssignmentConditions.vue'
+import { disableSettingModalOutsideClick } from '../../../composables/settings'
 
 const isDirty = ref(false)
 const initialData = ref(null)
@@ -274,6 +281,54 @@ const step = inject('step')
 const updateStep = inject('updateStep')
 
 const deskUrl = `${window.location.origin}/app/hd-service-level-agreement/${step.value.data?.name}`
+
+const getSlaResource = createResource({
+  url: 'frappe.client.get',
+  params: {
+    doctype: 'CRM Service Level Agreement',
+    name: step.value.data?.name,
+  },
+  onSuccess(data) {
+    let condition_json
+    try {
+      condition_json = JSON.parse(data.condition_json || '[]')
+    } catch (error) {
+      toast.error(
+        'Assignment conditions are invalid or corrupt, recreate the conditions.',
+      )
+      condition_json = []
+    }
+
+    const newData = {
+      ...data,
+      enabled: Boolean(data.enabled),
+      default: Boolean(data.default),
+      rolling_responses: Boolean(data.rolling_responses),
+      loading: false,
+      condition_json: condition_json,
+    }
+    slaData.value = newData
+    initialData.value = JSON.stringify(newData)
+    const conditionsAvailable = slaData.value.condition?.length > 0
+    const conditionsJsonAvailable = slaData.value.condition_json?.length > 0
+    if (conditionsAvailable && !conditionsJsonAvailable) {
+      useNewUI.value = false
+      isOldSla.value = true
+    } else {
+      useNewUI.value = true
+      isOldSla.value = false
+    }
+  },
+})
+
+console.log(getSlaResource)
+
+if (step.value.data && step.value.fetchData) {
+  slaData.value.loading = true
+  getSlaResource.submit()
+} else {
+  disableSettingModalOutsideClick.value = true
+}
 
 const goBack = () => {
   const confirmDialogInfo = {
@@ -319,4 +374,34 @@ const toggleDefaultSla = () => {
 }
 
 const saveSla = () => {}
+
+watch(
+  slaData,
+  (newVal) => {
+    if (!initialData.value) return
+    isDirty.value = JSON.stringify(newVal) != initialData.value
+    if (isDirty.value) {
+      disableSettingModalOutsideClick.value = true
+    } else {
+      disableSettingModalOutsideClick.value = false
+    }
+  },
+  { deep: true },
+)
+
+const beforeUnloadHandler = (event) => {
+  if (!isDirty.value) return
+  event.preventDefault()
+  event.returnValue = true
+}
+
+onMounted(() => {
+  addEventListener('beforeunload', beforeUnloadHandler)
+})
+
+onUnmounted(() => {
+  removeEventListener('beforeunload', beforeUnloadHandler)
+  resetSlaDataErrors()
+  disableSettingModalOutsideClick.value = false
+})
 </script>

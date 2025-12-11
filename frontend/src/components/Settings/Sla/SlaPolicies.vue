@@ -45,7 +45,7 @@
             :label="__('New')"
             variant="outline"
             icon-left="plus"
-            @click="goToNew()"
+            @click="createNewSlaPolicy()"
           />
         </div>
         <div v-else class="-ml-2">
@@ -59,7 +59,7 @@
           </div>
           <hr class="mt-2 mx-2" />
           <div
-            v-for="(sla, index) in slaPolicyListResource.list.data"
+            v-for="(sla, index) in slaPolicyListResource.data"
             :key="sla.name"
           >
             <div
@@ -73,7 +73,7 @@
                   class="text-base text-ink-gray-7 font-medium flex items-center gap-2"
                 >
                   {{ sla.name }}
-                  <Badge v-if="sla.default_sla" color="gray" size="sm"
+                  <Badge v-if="sla.default" color="gray" size="sm"
                     >Default</Badge
                   >
                 </div>
@@ -89,11 +89,11 @@
                   <Switch
                     size="sm"
                     :modelValue="sla.enabled"
-                    @update:modelValue="onToggle"
+                    @update:modelValue="onToggle(sla)"
                   />
                 </div>
                 <div>
-                  <Dropdown placement="right" :options="dropdownOptions">
+                  <Dropdown placement="right" :options="dropdownOptions(sla)">
                     <Button
                       icon="more-horizontal"
                       variant="ghost"
@@ -107,41 +107,46 @@
               v-if="index !== slaPolicyListResource.list.data.length - 1"
               class="mx-2"
             />
+            <Dialog
+              :options="{ title: __('Duplicate SLA Policy') }"
+              v-model="duplicateDialog.show"
+            >
+              <template #body-content>
+                <div class="flex flex-col gap-4">
+                  <FormControl
+                    :label="__('New SLA Policy Name')"
+                    type="text"
+                    v-model="duplicateDialog.name"
+                  />
+                </div>
+              </template>
+              <template #actions>
+                <div class="flex gap-2 justify-end">
+                  <Button
+                    variant="subtle"
+                    :label="__('Close')"
+                    @click="duplicateDialog.show = false"
+                  />
+                  <Button
+                    variant="solid"
+                    :label="__('Duplicate')"
+                    @click="duplicate(sla)"
+                  />
+                </div>
+              </template>
+            </Dialog>
           </div>
         </div>
       </div>
     </template>
   </SettingsLayoutBase>
-  <Dialog
-    :options="{ title: __('Duplicate SLA Policy') }"
-    v-model="duplicateDialog.show"
-  >
-    <template #body-content>
-      <div class="flex flex-col gap-4">
-        <FormControl
-          :label="__('New SLA Policy Name')"
-          type="text"
-          v-model="duplicateDialog.name"
-        />
-      </div>
-    </template>
-    <template #actions>
-      <div class="flex gap-2 justify-end">
-        <Button
-          variant="subtle"
-          :label="__('Close')"
-          @click="duplicateDialog.show = false"
-        />
-        <Button variant="solid" :label="__('Duplicate')" @click="duplicate()" />
-      </div>
-    </template>
-  </Dialog>
 </template>
 
 <script setup>
 import {
   Badge,
   Button,
+  createResource,
   Dialog,
   Dropdown,
   FormControl,
@@ -155,90 +160,93 @@ import ShieldCheck from '~icons/lucide/shield-check'
 import { ConfirmDelete } from '../../../utils'
 
 const slaPolicyListResource = inject('slaPolicyListResource')
-
+console.log('@slaPolicyListResource', slaPolicyListResource)
 const updateStep = inject('updateStep')
 
-const goToNew = () => {
+function createNewSlaPolicy() {
   updateStep('view', null, true)
 }
-
-function createNewSlaPolicy() {}
 
 const duplicateDialog = ref({
   show: false,
   name: '',
 })
 
-const props = defineProps({
-  data: {
-    type: Object,
-    required: true,
-  },
-})
-
 const isConfirmingDelete = ref(false)
 
-const dropdownOptions = [
+const dropdownOptions = (sla) => [
   {
     label: __('Duplicate'),
     onClick: () => {
       duplicateDialog.value = {
         show: true,
-        name: props.data.name + ' (Copy)',
+        name: sla.name + ' (Copy)',
       }
     },
     icon: 'copy',
   },
   ...ConfirmDelete({
-    onConfirmDelete: () => deleteSla(),
+    onConfirmDelete: () => deleteSla(sla),
     isConfirmingDelete,
   }),
 ]
 
-const duplicate = () => {
+const duplicate = (sla) => {
   createResource({
-    url: 'helpdesk.api.sla.duplicate_sla',
+    url: 'frappe.client.get',
     params: {
-      docname: props.data.name,
-      new_name: duplicateDialog.value.name,
+      doctype: 'CRM Service Level Agreement',
+      name: sla.name,
     },
     onSuccess: (data) => {
-      slaPolicyListResource.reload()
-      toast.success(__('SLA policy duplicated'))
-      duplicateDialog.value = {
-        show: false,
-        name: '',
-      }
-      setTimeout(() => {
-        updateStep('view', data, true)
-      }, 250)
+      createResource({
+        url: 'frappe.client.insert',
+        params: {
+          doc: {
+            ...data,
+            name: duplicateDialog.value.name,
+          },
+        },
+        auto: true,
+        onSuccess() {
+          slaPolicyListResource.reload()
+          toast.success(__('SLA policy duplicated'))
+          duplicateDialog.value = {
+            show: false,
+            name: '',
+          }
+          setTimeout(() => {
+            updateStep('view', data, true)
+          }, 250)
+        },
+      })
     },
     auto: true,
   })
 }
 
-const deleteSla = () => {
+const deleteSla = (sla) => {
   if (!isConfirmingDelete.value) {
     isConfirmingDelete.value = true
     return
   }
 
-  slaPolicyListResource.delete.submit(props.data.name, {
+  slaPolicyListResource.delete.submit(sla.name, {
     onSuccess: () => {
       toast.success(__('SLA policy deleted'))
     },
   })
 }
 
-const onToggle = () => {
-  if (props.data.default_sla) {
+const onToggle = (sla) => {
+  if (sla.default) {
     toast.error(__('SLA set as default cannot be disabled'))
     return
   }
   slaPolicyListResource.setValue.submit(
     {
-      name: props.data.name,
-      enabled: !props.data.enabled,
+      name: sla.name,
+      enabled: !sla.enabled,
     },
     {
       onSuccess: () => {

@@ -13,7 +13,7 @@ export const slaData = ref({
   condition: [],
   condition_json: [],
   priorities: [],
-  holiday_list: 'Default',
+  holiday_list: 'Select holiday list',
   working_hours: [],
   loading: false,
 })
