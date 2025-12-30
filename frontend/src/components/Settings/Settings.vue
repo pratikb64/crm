@@ -81,6 +81,8 @@ import {
 import { Dialog, Avatar } from 'frappe-ui'
 import { ref, markRaw, computed, watch, h } from 'vue'
 import AssignmentRulePage from './AssignmentRules/AssignmentRulePage.vue'
+import BusinessHolidayConfig from './BusinessHoliday/BusinessHolidayConfig.vue'
+import Briefcase from '~icons/lucide/briefcase'
 
 const { isManager, isTelephonyAgent, getUser } = usersStore()
 
@@ -171,6 +173,11 @@ const tabs = computed(() => {
           label: __('Assignment rules'),
           icon: markRaw(h(SettingsIcon2, { class: 'rotate-90' })),
           component: markRaw(AssignmentRulePage),
+        },
+        {
+          label: __('Business Holidays'),
+          icon: markRaw(Briefcase),
+          component: markRaw(BusinessHolidayConfig),
         },
       ],
     },
