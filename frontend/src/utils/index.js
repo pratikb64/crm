@@ -559,15 +559,15 @@ export function deepClone(obj) {
   if (obj === null || typeof obj !== 'object') {
     return obj
   }
-  
+
   if (obj instanceof Date) {
     return new Date(obj.getTime())
   }
-  
+
   if (Array.isArray(obj)) {
-    return obj.map(item => deepClone(item))
+    return obj.map((item) => deepClone(item))
   }
-  
+
   if (typeof obj === 'object') {
     const cloned = {}
     for (const key in obj) {
@@ -577,7 +577,7 @@ export function deepClone(obj) {
     }
     return cloned
   }
-  
+
   return obj
 }
 
