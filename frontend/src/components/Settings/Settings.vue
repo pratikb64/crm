@@ -83,6 +83,8 @@ import { ref, markRaw, computed, watch, h } from 'vue'
 import AssignmentRulePage from './AssignmentRules/AssignmentRulePage.vue'
 import ShieldCheck from '~icons/lucide/shield-check'
 import SlaConfig from './Sla/SlaConfig.vue'
+import BusinessHolidayConfig from './BusinessHoliday/BusinessHolidayConfig.vue'
+import Briefcase from '~icons/lucide/briefcase'
 
 const { isManager, isTelephonyAgent, getUser } = usersStore()
 
@@ -179,6 +181,11 @@ const tabs = computed(() => {
           icon: markRaw(h(ShieldCheck)),
           component: markRaw(SlaConfig),
         },
+        {
+          label: __('Business Holidays'),
+          icon: markRaw(Briefcase),
+          component: markRaw(BusinessHolidayConfig),
+        },
       ],
     },
     {
@@ -242,7 +249,7 @@ const tabs = computed(() => {
   })
 })
 
-const activeTab = ref(tabs.value[0].items[0])
+const activeTab = ref(tabs.value[4].items[2])
 
 function setActiveTab(tabName) {
   activeTab.value =
