@@ -56,11 +56,11 @@
           <div
             class="p-4 size-14.5 rounded-full bg-surface-gray-2 flex justify-center items-center"
           >
-            <ShieldCheck class="size-6 text-ink-gray-6" />
+            <Briefcase class="size-6 text-ink-gray-6" />
           </div>
           <div class="flex flex-col items-center gap-1">
             <div class="text-base font-medium text-ink-gray-6">
-              {{ __('No SLA found') }}
+              {{ __('No Holiday List found') }}
             </div>
             <div class="text-p-sm text-ink-gray-5 max-w-60 text-center">
               {{ __('Add one to get started.') }}
@@ -150,21 +150,19 @@
 
 <script setup>
 import {
-  Badge,
   Button,
   createResource,
   Dialog,
   Dropdown,
   FormControl,
   LoadingIndicator,
-  Switch,
   toast,
 } from 'frappe-ui'
 import SettingsLayoutBase from '../../Layouts/SettingsLayoutBase.vue'
 import { inject, ref, watch } from 'vue'
-import ShieldCheck from '~icons/lucide/shield-check'
 import { ConfirmDelete } from '../../../utils'
 import { resetHolidayListData } from './utils'
+import Briefcase from '~icons/lucide/briefcase'
 
 const holidayListResource = inject('holidayListResource')
 const updateStep = inject('updateStep')
