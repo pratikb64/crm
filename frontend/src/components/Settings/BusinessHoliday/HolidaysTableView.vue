@@ -1,7 +1,7 @@
 <template>
   <div class="rounded-md border px-2 border-gray-300 text-sm">
     <div
-      class="grid p-2 px-4 items-center gap-2"
+      class="grid p-3 px-4 items-center gap-2"
       :style="{
         gridTemplateColumns: '1fr 4fr 22px',
       }"
@@ -78,7 +78,7 @@ const dropdownOptions = (holiday) => [
 
 const dialog = ref({
   show: false,
-  holiday_date: null,
+  date: null,
   description: '',
   editing: null,
 })
@@ -92,7 +92,7 @@ const holidays = computed(() => {
 const columns = [
   {
     label: 'Date',
-    key: 'holiday_date',
+    key: 'date',
   },
   {
     label: 'Description',
@@ -103,7 +103,7 @@ const columns = [
 const editHoliday = (holiday) => {
   dialog.value = {
     show: true,
-    holiday_date: holiday.holiday_date,
+    date: holiday.date,
     description: holiday.description,
     editing: holiday,
   }
@@ -115,8 +115,8 @@ const deleteHoliday = (holidayToDelete) => {
     return
   }
   const index = holidayListData.value.holidays.findIndex((h) => {
-    const holidayDate = formatDate(h.holiday_date)
-    const editDate = formatDate(holidayToDelete?.holiday_date)
+    const holidayDate = formatDate(h.date)
+    const editDate = formatDate(holidayToDelete?.date)
     return holidayDate === editDate
   })
 

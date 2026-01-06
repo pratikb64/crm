@@ -158,7 +158,7 @@ import { holidayListData } from './utils'
 
 const dialog = ref({
   show: false,
-  holiday_date: null,
+  date: null,
   description: '',
   editing: null,
 })
@@ -212,7 +212,7 @@ const handleMouseLeave = (date, callback) => {
 
 const addHoliday = (date) => {
   dialog.value = {
-    holiday_date: date,
+    date: date,
     description: '',
     show: true,
     editing: null,
@@ -238,7 +238,7 @@ const isHoliday = (date) => {
   const inputDate = dayjs(date).startOf('day')
 
   return props.holidays.some((holiday) => {
-    const holidayDate = dayjs(holiday.holiday_date).startOf('day')
+    const holidayDate = dayjs(holiday.date).startOf('day')
     return holidayDate.isSame(inputDate)
   })
 }
@@ -248,20 +248,20 @@ const isWeekOff = (date) => {
 
   const inputDate = dayjs(date).startOf('day')
   return props.holidays.some((holiday) => {
-    const holidayDate = dayjs(holiday.holiday_date).startOf('day')
+    const holidayDate = dayjs(holiday.date).startOf('day')
     return holidayDate.isSame(inputDate) && holiday.weekly_off == 1
   })
 }
 
 const editHoliday = (date) => {
   const holiday = props.holidays.find((h) => {
-    const holidayDate = formatDate(h.holiday_date)
+    const holidayDate = formatDate(h.date)
     const editDate = formatDate(date)
     return holidayDate === editDate
   })
   dialog.value = {
     show: true,
-    holiday_date: holiday.holiday_date,
+    date: holiday.date,
     description: holiday.description,
     editing: holiday,
   }
@@ -275,20 +275,20 @@ const deleteHoliday = (event, date, callback) => {
     return
   }
   const holidayToDelete = props.holidays.find((h) => {
-    const holidayDate = formatDate(h.holiday_date)
+    const holidayDate = formatDate(h.date)
     const editDate = formatDate(date)
     return holidayDate === editDate
   })
   const index = props.holidays.findIndex((h) => {
-    const holidayDate = formatDate(h.holiday_date)
-    const editDate = formatDate(holidayToDelete.holiday_date)
+    const holidayDate = formatDate(h.date)
+    const editDate = formatDate(holidayToDelete.date)
     return holidayDate === editDate
   })
 
   props.holidays.splice(index, 1)
   dialog.value = {
     show: false,
-    holiday_date: null,
+    date: null,
     description: '',
     editing: null,
   }
@@ -298,7 +298,7 @@ const deleteHoliday = (event, date, callback) => {
 
 const getHolidayDescription = (date) => {
   const holiday = props.holidays.find((h) => {
-    const holidayDate = formatDate(h.holiday_date)
+    const holidayDate = formatDate(h.date)
     const editDate = formatDate(date)
     return holidayDate === editDate
   })

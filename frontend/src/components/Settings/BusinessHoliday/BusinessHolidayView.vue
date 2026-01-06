@@ -170,12 +170,20 @@
             <HolidaysCalendarView v-else />
           </div>
           <div class="mt-2.5 flex justify-between items-center">
-            <Button
-              variant="subtle"
-              :label="__('Add Holiday')"
-              @click="dialog.show = true"
-              icon-left="plus"
-            />
+            <div class="flex items-center gap-2">
+              <Button
+                variant="subtle"
+                :label="__('Add Holiday')"
+                @click="dialog.show = true"
+                icon-left="plus"
+              />
+              <Button variant="subtle" class="flex items-center gap-2">
+                <div class="flex items-center gap-2">
+                  <ImportIcon class="size-4" />
+                  Import
+                </div>
+              </Button>
+            </div>
             <!-- Indicators -->
             <div class="flex gap-4" v-if="holidayListView === 'calendar'">
               <div class="gap-1 flex items-center">
@@ -196,6 +204,7 @@
       </div>
     </template>
   </SettingsLayoutBase>
+  <AddHolidayModal v-model="dialog" />
   <ConfirmDialog
     v-model="showConfirmDialog.show"
     :title="showConfirmDialog.title"
@@ -217,6 +226,7 @@ import {
   FormControl,
   FormLabel,
   LoadingIndicator,
+  TabButtons,
   toast,
 } from 'frappe-ui'
 import { inject, onMounted, onUnmounted, ref, watch } from 'vue'
@@ -233,6 +243,8 @@ import RecurringHolidaysList from './RecurringHolidaysList.vue'
 import HolidaysTableView from './HolidaysTableView.vue'
 import HolidaysCalendarView from './HolidaysCalendarView.vue'
 import { getFormat, htmlToText } from '../../../utils'
+import AddHolidayModal from './AddHolidayModal.vue'
+import ImportIcon from '~icons/lucide/arrow-down-to-line'
 
 const isDirty = ref(false)
 const initialData = ref(null)
@@ -246,7 +258,7 @@ const showConfirmDialog = ref({
 })
 const dialog = ref({
   show: false,
-  holiday_date: new Date(),
+  date: new Date(),
   description: '',
   editing: null,
 })
@@ -343,7 +355,7 @@ const createBusinessHoliday = () => {
   const holidays = holidayListData.value.holidays.map((holiday) => {
     return {
       ...holiday,
-      holiday_date: dayjs(holiday.holiday_date).format('YYYY-MM-DD'),
+      date: dayjs(holiday.date).format('YYYY-MM-DD'),
     }
   })
 
@@ -389,7 +401,7 @@ const updateBusinessHoliday = async () => {
   const holidays = holidayListData.value.holidays.map((holiday) => {
     return {
       ...holiday,
-      date: dayjs(holiday.holiday_date).format('YYYY-MM-DD'),
+      date: dayjs(holiday.date).format('YYYY-MM-DD'),
     }
   })
 

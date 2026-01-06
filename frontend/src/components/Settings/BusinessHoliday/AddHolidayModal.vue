@@ -12,17 +12,17 @@
         <div class="flex flex-col gap-1.5">
           <FormLabel label="Date" required />
           <DatePicker
-            :value="dayjs(dialog.holiday_date).format('MM-DD-YYYY')"
-            @update:model-value="dialog.holiday_date = $event"
+            :value="dayjs(dialog.date).format('MM-DD-YYYY')"
+            @update:model-value="dialog.date = $event"
             :format="getFormat()"
             variant="subtle"
             placeholder="Date"
             class="w-full"
-            id="holiday_date"
+            id="date"
             required
-            @change="errors.holiday_date = ''"
+            @change="errors.date = ''"
           />
-          <ErrorMessage :message="errors.holiday_date" />
+          <ErrorMessage :message="errors.date" />
         </div>
         <div class="flex flex-col gap-1.5">
           <FormControl
@@ -76,15 +76,15 @@ import { holidayListData } from './utils'
 const dialog = defineModel()
 
 const errors = ref({
-  holiday_date: '',
+  date: '',
   description: '',
 })
 
 const resetForm = () => {
-  dialog.value.holiday_date = new Date()
+  dialog.value.date = new Date()
   dialog.value.description = ''
   errors.value = {
-    holiday_date: '',
+    date: '',
     description: '',
   }
 }
@@ -93,15 +93,15 @@ const onSave = () => {
   if (dialog.value.description?.trim() === '') {
     errors.value.description = 'Please enter a description'
   }
-  if (!dialog.value.holiday_date) {
-    errors.value.holiday_date = 'Please enter a valid date'
+  if (!dialog.value.date) {
+    errors.value.date = 'Please enter a valid date'
   }
 
-  if (errors.value.holiday_date || errors.value.description) {
+  if (errors.value.date || errors.value.description) {
     return
   }
 
-  const holidayDate = dayjs(dialog.value.holiday_date).startOf('day')
+  const holidayDate = dayjs(dialog.value.date).startOf('day')
   const fromDate = dayjs(holidayListData.value.from_date).startOf('day')
   const toDate = dayjs(holidayListData.value.to_date).startOf('day')
 
@@ -116,15 +116,13 @@ const onSave = () => {
 
   if (dialog.value.editing) {
     const holidayExists = holidayListData.value.holidays.find(
-      (h) =>
-        formatDate(h.holiday_date) === formatDate(dialog.value.holiday_date),
+      (h) => formatDate(h.date) === formatDate(dialog.value.date),
     )
 
     // If the holiday exists and user is trying to add a new holiday on the same date, show error
     if (
       holidayExists &&
-      formatDate(holidayExists.holiday_date) !==
-        formatDate(dialog.value.editing.holiday_date)
+      formatDate(holidayExists.date) !== formatDate(dialog.value.editing.date)
     ) {
       toast.error('Holiday already exists')
       return
@@ -138,8 +136,7 @@ const onSave = () => {
     })
   } else {
     const index = holidayListData.value.holidays.findIndex(
-      (h) =>
-        formatDate(h.holiday_date) === formatDate(dialog.value.holiday_date),
+      (h) => formatDate(h.date) === formatDate(dialog.value.date),
     )
     if (index !== -1) {
       toast.error('Holiday already exists')
@@ -153,7 +150,7 @@ const onSave = () => {
 
   dialog.value = {
     show: false,
-    holiday_date: null,
+    date: null,
     description: '',
     editing: null,
   }

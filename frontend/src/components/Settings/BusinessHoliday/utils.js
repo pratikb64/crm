@@ -262,7 +262,7 @@ function getWeeklyOffDateList(
   }
 
   const existingDates = holidays.map((h) =>
-    dayjs(h.holiday_date).startOf('day').toDate(),
+    dayjs(h.date).startOf('day').toDate(),
   )
 
   let currentDate = start.day(targetDay)
@@ -334,7 +334,7 @@ export function getWeeklyOffDates(
   )
   return dateList.map((date, index) => ({
     description: weeklyOff.charAt(0).toUpperCase() + weeklyOff.slice(1),
-    holiday_date: date,
+    date: date,
     weekly_off: 1,
     idx: index + 1,
     repetition: repetition,
