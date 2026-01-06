@@ -181,7 +181,7 @@
                 class="w-full"
                 id="start_date"
                 @change="validateSlaData('start_date')"
-                :formatter="(date) => getFormattedDate(date)"
+                :format="getFormat()"
               >
                 <template #prefix>
                   <LucideCalendar class="size-4" />
@@ -198,7 +198,7 @@
                 class="w-full"
                 id="end_date"
                 @change="validateSlaData('end_date')"
-                :formatter="(date) => getFormattedDate(date)"
+                :format="getFormat()"
               >
                 <template #prefix>
                   <LucideCalendar class="size-4" />
@@ -270,7 +270,7 @@ import {
 } from './utils'
 import SlaAssignmentConditions from './SlaAssignmentConditions.vue'
 import { disableSettingModalOutsideClick } from '../../../composables/settings'
-import { convertToConditions } from '../../../utils'
+import { convertToConditions, getFormat } from '../../../utils'
 import SlaHolidays from './SlaHolidays.vue'
 import SlaPriorityList from './SlaPriorityList.vue'
 

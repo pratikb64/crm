@@ -1,15 +1,16 @@
+import { dayjs } from 'frappe-ui'
 import { ref } from 'vue'
 
 export const holidayListDataErrors = ref({
   holiday_list_name: '',
   from_date: '',
   to_date: '',
+  dateRange: '',
 })
 
 export const holidayListData = ref({
   holiday_list_name: '',
   description: '',
-  associate_holiday_list: true,
   loading: false,
   total_holidays: 0,
   holidays: [],
@@ -18,8 +19,69 @@ export const holidayListData = ref({
   recurring_holidays: [],
 })
 
-export const validateHolidayListData = () => {
-  const errors = validateHoliday()
+export const validateHolidayListData = (key) => {
+  const validateField = (field) => {
+    if (key && field !== key) return
+
+    switch (field) {
+      case 'holiday_list_name':
+        if (!holidayListData.value.holiday_list_name?.trim()) {
+          holidayListDataErrors.value.holiday_list_name =
+            'Holiday list name is required'
+        } else {
+          holidayListDataErrors.value.holiday_list_name = ''
+        }
+        break
+      case 'from_date':
+        if (!holidayListData.value.from_date) {
+          holidayListDataErrors.value.from_date = 'Start date is required'
+        } else {
+          holidayListDataErrors.value.from_date = ''
+        }
+
+        if (holidayListData.value.to_date) {
+          const startDate = new Date(holidayListData.value.from_date)
+          const endDate = new Date(holidayListData.value.to_date)
+
+          if (startDate > endDate) {
+            holidayListDataErrors.value.dateRange =
+              'Start date cannot be after end date'
+          } else {
+            holidayListDataErrors.value.dateRange = ''
+          }
+        }
+        break
+      case 'to_date':
+        if (!holidayListData.value.to_date) {
+          holidayListDataErrors.value.to_date = 'End date is required'
+        } else {
+          holidayListDataErrors.value.to_date = ''
+        }
+
+        if (holidayListData.value.from_date) {
+          const startDate = new Date(holidayListData.value.from_date)
+          const endDate = new Date(holidayListData.value.to_date)
+
+          if (startDate > endDate) {
+            holidayListDataErrors.value.dateRange =
+              'Start date cannot be after end date'
+          } else {
+            holidayListDataErrors.value.dateRange = ''
+          }
+        }
+        break
+      default:
+        break
+    }
+  }
+
+  if (key) {
+    validateField(key)
+  } else {
+    Object.keys(holidayListDataErrors.value).forEach(validateField)
+  }
+
+  return holidayListDataErrors.value
 }
 
 export const resetHolidayListErrors = () => {
@@ -60,7 +122,6 @@ export const resetHolidayData = () => {
   holidayListData.value = {
     holiday_list_name: '',
     description: '',
-    associate_holiday_list: true,
     loading: false,
     total_holidays: 0,
     holidays: [],
@@ -74,7 +135,6 @@ export const resetHolidayListData = () => {
   holidayListData.value = {
     holiday_list_name: '',
     description: '',
-    associate_holiday_list: true,
     loading: false,
     total_holidays: 0,
     holidays: [],
@@ -162,6 +222,7 @@ export function updateWeeklyOffDates() {
       newHolidays,
       day.repetition,
     )
+
     newHolidays.push(...weeklyOffs)
   }
   holidayListData.value.holidays = newHolidays
@@ -210,7 +271,7 @@ function getWeeklyOffDateList(
   }
   const useAllOccurrences = !repetition || repetition.all
 
-  while (currentDate.isSameOrBefore(end, 'day')) {
+  while (!currentDate.isAfter(end, 'day')) {
     const currentDateObj = currentDate.toDate()
     const currentDateStart = dayjs(currentDateObj).startOf('day')
 

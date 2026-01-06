@@ -6,7 +6,7 @@
           variant="ghost"
           icon-left="chevron-left"
           :label="
-            holidayListData.business_holiday_name || __('New Business Holiday')
+            holidayListData.holiday_list_name || __('New Business Holiday')
           "
           size="md"
           @click="goBack()"
@@ -58,14 +58,12 @@
             variant="subtle"
             :placeholder="__('Name')"
             :label="__('Name')"
-            v-model="holidayListData.business_holiday_name"
+            v-model="holidayListData.holiday_list_name"
             required
-            @change="validateHolidayListData('business_holiday_name')"
+            @change="validateHolidayListData('holiday_list_name')"
             maxlength="100"
           />
-          <ErrorMessage
-            :message="holidayListDataErrors.business_holiday_name"
-          />
+          <ErrorMessage :message="holidayListDataErrors.holiday_list_name" />
         </div>
         <hr class="my-8 border-outline-gray-2" />
         <div>
@@ -86,7 +84,7 @@
                 placeholder="11/01/2025"
                 class="w-full"
                 id="from_date"
-                :formatter="(date) => getFormattedDate(date)"
+                :format="getFormat()"
                 :debounce="300"
                 @update:model-value="updateDuration('from_date')"
               >
@@ -109,7 +107,7 @@
                 placeholder="25/12/2025"
                 class="w-full"
                 id="to_date"
-                :formatter="(date) => getFormattedDate(date)"
+                :format="getFormat()"
                 :debounce="300"
                 @update:model-value="updateDuration('to_date')"
               >
@@ -134,7 +132,7 @@
           <div class="mt-5">
             <RecurringHolidaysList
               :holidayData="holidayListData"
-              :holidays="holidayListData.holidays"
+              :holidays="holidayListData.recurring_holidays"
             />
           </div>
         </div>
@@ -214,6 +212,7 @@ import {
   ConfirmDialog,
   createResource,
   DatePicker,
+  dayjs,
   ErrorMessage,
   FormControl,
   FormLabel,
@@ -230,8 +229,10 @@ import {
   updateWeeklyOffDates,
 } from './utils'
 import { disableSettingModalOutsideClick } from '../../../composables/settings'
-import { convertToConditions } from '../../../utils'
 import RecurringHolidaysList from './RecurringHolidaysList.vue'
+import HolidaysTableView from './HolidaysTableView.vue'
+import HolidaysCalendarView from './HolidaysCalendarView.vue'
+import { getFormat, htmlToText } from '../../../utils'
 
 const isDirty = ref(false)
 const initialData = ref(null)
@@ -254,8 +255,6 @@ const holidayListResource = inject('holidayListResource')
 const step = inject('step')
 const updateStep = inject('updateStep')
 
-const deskUrl = `${window.location.origin}/app/crm-holiday-list/${step.value.data?.name}`
-
 const getBusinessHolidayResource = createResource({
   url: 'frappe.client.get',
   params: {
@@ -263,40 +262,15 @@ const getBusinessHolidayResource = createResource({
     name: step.value.data?.name,
   },
   onSuccess(data) {
-    let condition_json
-    try {
-      condition_json = JSON.parse(data.condition_json || '[]')
-    } catch (error) {
-      toast.error(
-        __(
-          'Assignment conditions are invalid or corrupt, recreate the conditions.',
-        ),
-      )
-      condition_json = []
+    holidayListData.value = data
+    initialData.value = JSON.stringify(data)
+  },
+  transform(data) {
+    for (let holiday of data.holidays) {
+      holiday.description = htmlToText(holiday.description)
     }
-
-    const newData = {
-      ...data,
-      enabled: Boolean(data.enabled),
-      default: Boolean(data.default),
-      rolling_responses: Boolean(data.rolling_responses),
-      loading: false,
-      condition_json: condition_json,
-    }
-    holidayListData.value = newData
-    step.value.data = newData
-
-    initialData.value = JSON.stringify(newData)
-    const conditionsAvailable = holidayListData.value.condition?.length > 0
-    const conditionsJsonAvailable =
-      holidayListData.value.condition_json?.length > 0
-    if (conditionsAvailable && !conditionsJsonAvailable) {
-      useNewUI.value = false
-      isOldBusinessHoliday.value = true
-    } else {
-      useNewUI.value = true
-      isOldBusinessHoliday.value = false
-    }
+    data.recurring_holidays = JSON.parse(data.recurring_holidays || '[]')
+    return data
   },
 })
 
@@ -335,7 +309,7 @@ const goBack = () => {
 }
 
 const saveBusinessHoliday = () => {
-  const validationErrors = validateHolidayListData(undefined, !useNewUI.value)
+  const validationErrors = validateHolidayListData()
 
   if (Object.values(validationErrors).some((error) => error)) {
     toast.error(
@@ -366,14 +340,20 @@ const saveBusinessHoliday = () => {
 }
 
 const createBusinessHoliday = () => {
+  const holidays = holidayListData.value.holidays.map((holiday) => {
+    return {
+      ...holiday,
+      holiday_date: dayjs(holiday.holiday_date).format('YYYY-MM-DD'),
+    }
+  })
+
   holidayListResource.insert.submit(
     {
       ...holidayListData.value,
-      condition: convertToConditions({
-        conditions: holidayListData.value.condition_json,
-        fieldPrefix: 'doc',
-      }),
-      condition_json: JSON.stringify(holidayListData.value.condition_json),
+      holidays: holidays,
+      recurring_holidays: JSON.stringify(
+        holidayListData.value.recurring_holidays,
+      ),
     },
     {
       onSuccess(data) {
@@ -399,26 +379,27 @@ const renameBusinessHolidayResource = createResource({
   makeParams() {
     return {
       doctype: 'CRM Holiday List',
-      old_name: step.value.data.name,
-      new_name: holidayListData.value.business_holiday_name,
+      old_name: holidayListData.value.name,
+      new_name: holidayListData.value.holiday_list_name,
     }
   },
 })
 
 const updateBusinessHoliday = async () => {
+  const holidays = holidayListData.value.holidays.map((holiday) => {
+    return {
+      ...holiday,
+      date: dayjs(holiday.holiday_date).format('YYYY-MM-DD'),
+    }
+  })
+
   await holidayListResource.setValue.submit(
     {
       ...holidayListData.value,
-      name: step.value.data.name,
-      condition: useNewUI.value
-        ? convertToConditions({
-            conditions: holidayListData.value.condition_json,
-            fieldPrefix: 'doc',
-          })
-        : holidayListData.value.condition,
-      condition_json: useNewUI.value
-        ? JSON.stringify(holidayListData.value.condition_json)
-        : null,
+      holidays: holidays,
+      recurring_holidays: JSON.stringify(
+        holidayListData.value.recurring_holidays,
+      ),
     },
     {
       onError(err) {
@@ -430,9 +411,7 @@ const updateBusinessHoliday = async () => {
     },
   )
 
-  if (
-    holidayListData.value.name !== holidayListData.value.business_holiday_name
-  ) {
+  if (holidayListData.value.name !== holidayListData.value.holiday_list_name) {
     await renameBusinessHolidayResource.submit().catch(async (er) => {
       const error =
         er?.messages?.[0] ||
@@ -445,7 +424,7 @@ const updateBusinessHoliday = async () => {
 
     getBusinessHolidayResource.submit({
       doctype: 'CRM Holiday List',
-      name: holidayListData.value.business_holiday_name,
+      name: holidayListData.value.holiday_list_name,
     })
   } else {
     await getBusinessHolidayResource.reload()

@@ -135,7 +135,7 @@
   </Dialog>
 </template>
 
-<script setup lang="ts">
+<script setup>
 import dayjs from 'dayjs'
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore'
 import weekday from 'dayjs/plugin/weekday'
@@ -164,7 +164,7 @@ const recurringHolidayData = ref({
 
 const props = defineProps({
   holidays: {
-    type: Array<any>,
+    type: Array,
     default: () => [],
     required: true,
   },
@@ -217,7 +217,7 @@ const workDays = ref([
   },
 ])
 
-const dropdownOptions = (holiday: any) => [
+const dropdownOptions = (holiday) => [
   {
     label: 'Edit',
     onClick: () => editHoliday(holiday),
@@ -266,7 +266,7 @@ const addHoliday = () => {
   dialog.value = true
 }
 
-const editHoliday = (holiday: any) => {
+const editHoliday = (holiday) => {
   const index = props.holidays.findIndex((h) => h.day === holiday.day)
   recurringHolidayData.value = {
     ...JSON.parse(JSON.stringify(holiday)),
@@ -321,12 +321,12 @@ const saveHoliday = () => {
   dialog.value = false
 }
 
-const deleteHoliday = (holiday: any) => {
+const deleteHoliday = (holiday) => {
   if (!isConfirmingDelete.value) {
     isConfirmingDelete.value = true
     return
   }
-  const index = props.holidays.findIndex((h: any) => {
+  const index = props.holidays.findIndex((h) => {
     return h.day === holiday.day
   })
   props.holidays.splice(index, 1)
