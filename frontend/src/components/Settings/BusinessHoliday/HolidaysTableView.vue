@@ -1,5 +1,5 @@
 <template>
-  <div class="rounded-md border px-2 border-gray-300 text-sm">
+  <div class="rounded-md border px-2 border-outline-gray-2 text-sm">
     <div
       class="grid p-3 px-4 items-center gap-2"
       :style="{
@@ -14,7 +14,7 @@
         {{ column.label }}
       </div>
     </div>
-    <hr />
+    <hr class="border-outline-gray-2" />
     <div v-for="(holiday, index) in holidays" :key="holiday.name">
       <div
         class="grid gap-2 py-3.5 px-4 items-center"
@@ -30,7 +30,7 @@
             :type="'text'"
             placeholder="Description"
             v-model="holiday[column.key]"
-            class="!bg-white w-full text-base px-0 focus:!ring-0 border-none hover:bg-white outline-none no-underline focus:!outline-none"
+            class="bg-white dark:bg-surface-gray-1 w-full text-base px-0 focus:!ring-0 border-none dark:hover:bg-surface-gray-1 outline-none no-underline focus:!outline-none"
           />
           <div v-else>
             {{ dayjs(holiday[column.key]).format('DD MMM YYYY') }}

@@ -1,5 +1,5 @@
 <template>
-  <div class="p-6.5 px-5 rounded-xl border border-gray-300">
+  <div class="p-6.5 px-5 rounded-xl border border-outline-gray-2">
     <div class="mb-6.5 flex justify-between items-center">
       <div class="ml-1">
         <Popover v-if="startYear !== endYear">
@@ -104,14 +104,14 @@
     </div>
   </div>
 </template>
-<script setup lang="ts">
+<script setup>
 import { computed, onMounted, ref, watch } from 'vue'
 import dayjs from 'dayjs'
 import { Button, Popover } from 'frappe-ui'
 import HLCalender from './HLCalender.vue'
 import { holidayListData } from './utils'
 
-const visibleMonths = ref<'first-half' | 'second-half'>('first-half')
+const visibleMonths = ref('first-half')
 const months = ref([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])
 const currentYear = ref(dayjs().year())
 
@@ -126,7 +126,7 @@ const yearsList = computed(() => {
   return yearList
 })
 
-const onYearChange = (togglePopover: () => void, year: number) => {
+const onYearChange = (togglePopover, year) => {
   currentYear.value = year
   if (year === dayjs(holidayListData.value.from_date).year()) {
     if (dayjs(holidayListData.value.from_date).month() >= 6) {

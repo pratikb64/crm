@@ -177,12 +177,21 @@
                 @click="dialog.show = true"
                 icon-left="plus"
               />
-              <Button variant="subtle" class="flex items-center gap-2">
-                <div class="flex items-center gap-2">
-                  <ImportIcon class="size-4" />
-                  Import
-                </div>
-              </Button>
+              <input
+                ref="csvInputRef"
+                type="file"
+                accept=".csv"
+                class="hidden"
+                @change="handleFileSelect"
+              />
+              <Dropdown :options="importOptions">
+                <Button variant="subtle" class="flex items-center gap-2">
+                  <div class="flex items-center gap-2">
+                    <ImportIcon class="size-4" />
+                    {{ __('Import') }}
+                  </div>
+                </Button>
+              </Dropdown>
             </div>
             <!-- Indicators -->
             <div class="flex gap-4" v-if="holidayListView === 'calendar'">
@@ -222,6 +231,7 @@ import {
   createResource,
   DatePicker,
   dayjs,
+  Dropdown,
   ErrorMessage,
   FormControl,
   FormLabel,
@@ -229,7 +239,7 @@ import {
   TabButtons,
   toast,
 } from 'frappe-ui'
-import { inject, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, inject, onMounted, onUnmounted, ref, watch } from 'vue'
 import SettingsLayoutBase from '../../Layouts/SettingsLayoutBase.vue'
 import {
   resetHolidayListErrors,
@@ -245,6 +255,7 @@ import HolidaysCalendarView from './HolidaysCalendarView.vue'
 import { getFormat, htmlToText } from '../../../utils'
 import AddHolidayModal from './AddHolidayModal.vue'
 import ImportIcon from '~icons/lucide/arrow-down-to-line'
+import DownloadIcon from '~icons/lucide/download'
 
 const isDirty = ref(false)
 const initialData = ref(null)
@@ -263,6 +274,7 @@ const dialog = ref({
   editing: null,
 })
 const holidayListView = ref('calendar')
+const csvInputRef = ref(null)
 const holidayListResource = inject('holidayListResource')
 const step = inject('step')
 const updateStep = inject('updateStep')
@@ -444,6 +456,142 @@ const updateBusinessHoliday = async () => {
 
   toast.success(__('Business holiday updated'))
   holidayListResource.reload()
+}
+
+const importOptions = computed(() => [
+  {
+    label: __('Select file (CSV)'),
+    icon: 'file',
+    onClick: () => {
+      csvInputRef.value?.click()
+    },
+  },
+  {
+    label: __('Download template'),
+    icon: DownloadIcon,
+    onClick: () => {
+      downloadTemplate()
+    },
+  },
+])
+
+const handleFileSelect = (event) => {
+  const file = event.target.files?.[0]
+  if (!file) return
+
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    try {
+      const text = e.target.result
+      const lines = text.split('\n').filter((line) => line.trim())
+
+      if (lines.length < 2) {
+        toast.error(__('CSV file is empty or has no data rows'))
+        return
+      }
+
+      // Parse header to find column indices
+      const header = lines[0].split(',').map((h) => h.trim().toLowerCase())
+      const dateIndex = header.findIndex(
+        (h) => h === 'date' || h === 'holiday_date',
+      )
+      const descriptionIndex = header.findIndex(
+        (h) =>
+          h === 'description' ||
+          h === 'holiday_description' ||
+          h === 'name' ||
+          h === 'holiday_name',
+      )
+
+      if (dateIndex === -1) {
+        toast.error(__('CSV must have a "date" or "holiday_date" column'))
+        return
+      }
+
+      let importedCount = 0
+      let skippedCount = 0
+
+      for (let i = 1; i < lines.length; i++) {
+        const values = lines[i].split(',').map((v) => v.trim())
+        const dateStr = values[dateIndex]
+        const description =
+          descriptionIndex !== -1 ? values[descriptionIndex] : ''
+
+        if (!dateStr) continue
+
+        const parsedDate = dayjs(dateStr)
+        if (!parsedDate.isValid()) {
+          skippedCount++
+          continue
+        }
+
+        // Check if date is within the valid range
+        const fromDate = dayjs(holidayListData.value.from_date)
+        const toDate = dayjs(holidayListData.value.to_date)
+        if (
+          fromDate.isValid() &&
+          toDate.isValid() &&
+          (parsedDate.isBefore(fromDate, 'day') ||
+            parsedDate.isAfter(toDate, 'day'))
+        ) {
+          skippedCount++
+          continue
+        }
+
+        // Check for duplicate dates
+        const dateExists = holidayListData.value.holidays.some(
+          (h) =>
+            dayjs(h.date).format('YYYY-MM-DD') ===
+            parsedDate.format('YYYY-MM-DD'),
+        )
+
+        if (dateExists) {
+          skippedCount++
+          continue
+        }
+
+        holidayListData.value.holidays.push({
+          date: parsedDate.toDate(),
+          description: description || '',
+          weekly_off: 0,
+        })
+        importedCount++
+      }
+
+      if (importedCount > 0) {
+        toast.success(__('Imported {0} holiday(s)', [importedCount]))
+      } else {
+        toast.warning(__('No new holidays were imported'))
+      }
+    } catch (error) {
+      console.error('CSV import error:', error)
+      toast.error(__('Failed to import CSV file'))
+    }
+  }
+  reader.readAsText(file)
+
+  // Reset input so the same file can be selected again
+  event.target.value = ''
+}
+
+const downloadTemplate = () => {
+  const currentYear = dayjs().year()
+  const csvContent = `date,description
+${currentYear}-01-01,New Year
+${currentYear}-12-25,Christmas Day`
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+  const link = document.createElement('a')
+  const url = URL.createObjectURL(blob)
+
+  link.setAttribute('href', url)
+  link.setAttribute('download', 'holiday_import_template.csv')
+  link.style.visibility = 'hidden'
+
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
 }
 
 const updateDuration = (key) => {
