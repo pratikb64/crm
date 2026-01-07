@@ -112,40 +112,40 @@
               v-if="index !== holidayListResource.list.data.length - 1"
               class="mx-2 border-outline-gray-2"
             />
-            <Dialog
-              :options="{ title: __('Duplicate Holiday List') }"
-              v-model="duplicateDialog.show"
-            >
-              <template #body-content>
-                <div class="flex flex-col gap-4">
-                  <FormControl
-                    :label="__('New Holiday List Name')"
-                    type="text"
-                    v-model="duplicateDialog.name"
-                    maxlength="100"
-                  />
-                </div>
-              </template>
-              <template #actions>
-                <div class="flex gap-2 justify-end">
-                  <Button
-                    variant="subtle"
-                    :label="__('Close')"
-                    @click="duplicateDialog.show = false"
-                  />
-                  <Button
-                    variant="solid"
-                    :label="__('Duplicate')"
-                    @click="() => duplicate(holidayList)"
-                  />
-                </div>
-              </template>
-            </Dialog>
           </div>
         </div>
       </div>
     </template>
   </SettingsLayoutBase>
+  <Dialog
+    :options="{ title: __('Duplicate Holiday List') }"
+    v-model="duplicateDialog.show"
+  >
+    <template #body-content>
+      <div class="flex flex-col gap-4">
+        <FormControl
+          :label="__('New Holiday List Name')"
+          type="text"
+          v-model="duplicateDialog.newName"
+          maxlength="100"
+        />
+      </div>
+    </template>
+    <template #actions>
+      <div class="flex gap-2 justify-end">
+        <Button
+          variant="subtle"
+          :label="__('Close')"
+          @click="duplicateDialog.show = false"
+        />
+        <Button
+          variant="solid"
+          :label="__('Duplicate')"
+          @click="() => duplicate(holidayList)"
+        />
+      </div>
+    </template>
+  </Dialog>
 </template>
 
 <script setup>
@@ -175,6 +175,7 @@ function createNewHolidayList() {
 
 const duplicateDialog = ref({
   show: false,
+  newName: '',
   name: '',
 })
 
@@ -186,7 +187,8 @@ const dropdownOptions = (holidayList) => [
     onClick: () => {
       duplicateDialog.value = {
         show: true,
-        name: holidayList.name + ' (Copy)',
+        newName: holidayList.name + ' (Copy)',
+        name: holidayList.name,
       }
     },
     icon: 'copy',
@@ -197,13 +199,13 @@ const dropdownOptions = (holidayList) => [
   }),
 ]
 
-const duplicate = (holidayList) => {
+const duplicate = () => {
   console.log('duplicate', duplicateDialog.value)
   createResource({
     url: 'frappe.client.get',
     params: {
       doctype: 'CRM Holiday List',
-      name: holidayList.name,
+      name: duplicateDialog.value.name,
     },
     onSuccess: (data) => {
       createResource({
@@ -211,9 +213,8 @@ const duplicate = (holidayList) => {
         params: {
           doc: {
             ...data,
-            default: false,
-            holiday_list_name: duplicateDialog.value.name,
-            name: duplicateDialog.value.name,
+            holiday_list_name: duplicateDialog.value.newName,
+            name: duplicateDialog.value.newName,
           },
         },
         auto: true,
@@ -222,7 +223,7 @@ const duplicate = (holidayList) => {
           toast.success(__('Holiday list duplicated'))
           duplicateDialog.value = {
             show: false,
-            name: '',
+            newName: '',
           }
           resetHolidayListData()
           setTimeout(() => {

@@ -183,7 +183,10 @@ import { slaData, slaDataErrors } from './utils'
 import { ref } from 'vue'
 import WorkDayModal from './WorkDayModal.vue'
 import { setSettingsActiveTab } from '../../../composables/settings'
-import { holidayListActiveStep } from '../BusinessHoliday/utils'
+import {
+  holidayListActiveStep,
+  resetHolidayListData,
+} from '../BusinessHoliday/utils'
 
 const dialog = ref({
   show: false,
@@ -240,7 +243,16 @@ const workDayOptions = [
 ]
 
 const createNewHolidayList = () => {
-  window.open(`${window.location.origin}/app/crm-holiday-list`)
+  resetHolidayListData()
+  holidayListActiveStep.value = {
+    screen: 'view',
+    data: null,
+    previousScreen: {
+      screen: 'view',
+      data: slaData.value.name,
+    },
+  }
+  setSettingsActiveTab('Business Holidays')
 }
 
 const deleteWorkDay = (workDay) => {

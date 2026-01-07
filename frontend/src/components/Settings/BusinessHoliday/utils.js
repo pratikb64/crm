@@ -124,19 +124,6 @@ export const getRepetitionText = (repetition) => {
   return parts[0] ? `Every ${parts[0]}` : ''
 }
 
-export const resetHolidayData = () => {
-  holidayListData.value = {
-    holiday_list_name: '',
-    description: '',
-    loading: false,
-    total_holidays: 0,
-    holidays: [],
-    from_date: null,
-    to_date: null,
-    recurring_holidays: [],
-  }
-}
-
 export const resetHolidayListData = () => {
   holidayListData.value = {
     holiday_list_name: '',

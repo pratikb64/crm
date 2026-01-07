@@ -247,6 +247,7 @@ import {
   holidayListDataErrors,
   validateHolidayListData,
   updateWeeklyOffDates,
+  holidayListActiveStep,
 } from './utils'
 import {
   disableSettingModalOutsideClick,
@@ -317,18 +318,20 @@ const goBack = () => {
     ),
     onConfirm: goBack,
   }
+
   if (isDirty.value && !showConfirmDialog.value.show) {
     showConfirmDialog.value = confirmDialogInfo
     return
   }
-  if (step.value.previousScreen) {
-    setSettingsActiveTab('SLA Policies')
 
+  if (holidayListActiveStep.value.previousScreen) {
     slaActiveStep.value = {
       screen: 'view',
       data: { name: step.value.previousScreen.data },
       fetchData: true,
     }
+    setSettingsActiveTab('SLA Policies')
+    return
   }
   // Workaround fix for settings modal not closing after going back
   setTimeout(() => {
