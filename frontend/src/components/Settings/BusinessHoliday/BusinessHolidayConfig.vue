@@ -24,12 +24,6 @@ const holidayListData = createListResource({
 
 provide('holidayListSearchQuery', holidayListSearchQuery)
 provide('holidayListResource', holidayListData)
-provide('step', holidayListActiveStep)
-provide('updateStep', updateStep)
-
-function updateStep(newStep, data, fetchData) {
-  holidayListActiveStep.value = { screen: newStep, data, fetchData }
-}
 
 onUnmounted(() => {
   holidayListSearchQuery.value = ''

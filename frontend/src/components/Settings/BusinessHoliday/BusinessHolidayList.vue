@@ -88,7 +88,7 @@
               class="flex items-center gap-4 cursor-pointer hover:bg-surface-menu-bar rounded"
             >
               <div
-                @click="updateStep('view', holidayList, true)"
+                @click="updateToView(holidayList)"
                 class="w-full pl-2 col-span-5 flex items-center h-14 gap-2"
               >
                 <div class="text-base text-ink-gray-7 font-medium truncate">
@@ -161,16 +161,28 @@ import {
 import SettingsLayoutBase from '../../Layouts/SettingsLayoutBase.vue'
 import { inject, ref, watch } from 'vue'
 import { ConfirmDelete } from '../../../utils'
-import { resetHolidayListData } from './utils'
+import {
+  resetHolidayListData,
+  holidayListData,
+  holidayListActiveStep,
+} from './utils'
 import Briefcase from '~icons/lucide/briefcase'
 
 const holidayListResource = inject('holidayListResource')
-const updateStep = inject('updateStep')
 const holidayListSearchQuery = inject('holidayListSearchQuery')
 
 function createNewHolidayList() {
   resetHolidayListData()
-  updateStep('view', null)
+  holidayListActiveStep.value = { screen: 'view', data: null, fetchData: false }
+}
+
+function updateToView(holidayList) {
+  holidayListData.value = holidayList
+  holidayListActiveStep.value = {
+    screen: 'view',
+    data: holidayList,
+    fetchData: true,
+  }
 }
 
 const duplicateDialog = ref({
@@ -227,7 +239,12 @@ const duplicate = () => {
           }
           resetHolidayListData()
           setTimeout(() => {
-            updateStep('view', newHolidayListData, true)
+            holidayListData.value = newHolidayListData
+            holidayListActiveStep.value = {
+              screen: 'view',
+              data: newHolidayListData,
+              fetchData: true,
+            }
           }, 250)
         },
       })

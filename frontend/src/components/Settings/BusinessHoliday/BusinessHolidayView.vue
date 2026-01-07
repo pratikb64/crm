@@ -27,7 +27,7 @@
         theme="gray"
         variant="solid"
         @click="saveBusinessHoliday()"
-        :disabled="Boolean(!isDirty && step.data)"
+        :disabled="Boolean(!isDirty && holidayListActiveStep.data)"
         :loading="
           holidayListResource.setValue.loading ||
           renameBusinessHolidayResource.loading ||
@@ -281,14 +281,12 @@ const dialog = ref({
 const holidayListView = ref('calendar')
 const csvInputRef = ref(null)
 const holidayListResource = inject('holidayListResource')
-const step = inject('step')
-const updateStep = inject('updateStep')
 
 const getBusinessHolidayResource = createResource({
   url: 'frappe.client.get',
   params: {
     doctype: 'CRM Holiday List',
-    name: step.value.data?.name,
+    name: holidayListActiveStep.value.data?.name,
   },
   onSuccess(data) {
     holidayListData.value = data
@@ -303,7 +301,7 @@ const getBusinessHolidayResource = createResource({
   },
 })
 
-if (step.value.data && step.value.fetchData) {
+if (holidayListActiveStep.value.data && holidayListActiveStep.value.fetchData) {
   getBusinessHolidayResource.submit()
 } else {
   disableSettingModalOutsideClick.value = true
@@ -327,15 +325,14 @@ const goBack = () => {
   if (holidayListActiveStep.value.previousScreen) {
     slaActiveStep.value = {
       screen: 'view',
-      data: { name: step.value.previousScreen.data },
+      data: { name: holidayListActiveStep.value.previousScreen.data },
       fetchData: true,
     }
     setSettingsActiveTab('SLA Policies')
     return
   }
-  // Workaround fix for settings modal not closing after going back
   setTimeout(() => {
-    step.value = {
+    holidayListActiveStep.value = {
       screen: 'list',
       data: null,
       fetchData: true,
@@ -354,7 +351,7 @@ const saveBusinessHoliday = () => {
     return
   }
 
-  if (step.value.data) {
+  if (holidayListActiveStep.value.data) {
     if (isOldBusinessHoliday.value && useNewUI.value) {
       showConfirmDialog.value = {
         show: true,
@@ -394,7 +391,12 @@ const createBusinessHoliday = () => {
     {
       onSuccess(data) {
         toast.success(__('Holiday list created'))
-        updateStep('view', data, true)
+        holidayListData.value = data
+        holidayListActiveStep.value = {
+          screen: 'view',
+          data: data,
+          fetchData: true,
+        }
         getBusinessHolidayResource.submit({
           doctype: 'CRM Holiday List',
           name: data.name,
