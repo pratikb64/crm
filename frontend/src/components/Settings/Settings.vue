@@ -2,7 +2,7 @@
   <Dialog
     v-model="showSettings"
     :options="{ size: '5xl' }"
-    @close="activeSettingsPage = ''"
+    @close="setSettingsActiveTab('')"
     :disableOutsideClickToClose="disableSettingModalOutsideClick"
   >
     <template #body>
@@ -30,7 +30,7 @@
                       ? 'bg-surface-selected shadow-sm hover:bg-surface-selected'
                       : 'hover:bg-surface-gray-3'
                   "
-                  @click="activeSettingsPage = i.label"
+                  @click="setSettingsActiveTab(i.label)"
                 />
               </nav>
             </template>
@@ -51,16 +51,12 @@
 import SidebarLink from '@/components/SidebarLink.vue'
 import {
   showSettings,
-  activeSettingsPage,
   disableSettingModalOutsideClick,
 } from '@/composables/settings'
 import { Dialog } from 'frappe-ui'
-import { ref, watch } from 'vue'
 import {
   setSettingsActiveTab,
   settingsActiveTab,
   settingsTabs,
 } from '../../composables/settings'
-
-watch(activeSettingsPage, (activePage) => setSettingsActiveTab(activePage))
 </script>

@@ -180,7 +180,7 @@ import {
 } from 'frappe-ui'
 import { ConfirmDelete, getGridTemplateColumnsForTable } from '../../../utils'
 import { slaData, slaDataErrors } from './utils'
-import { ref } from 'vue'
+import { nextTick, ref } from 'vue'
 import WorkDayModal from './WorkDayModal.vue'
 import { setSettingsActiveTab } from '../../../composables/settings'
 import {
@@ -304,7 +304,9 @@ const editHolidayList = (holidayList) => {
       data: slaData.value.name,
     },
   }
-  setSettingsActiveTab('Business Holidays')
+  nextTick(() => {
+    setSettingsActiveTab('Business Holidays')
+  })
 }
 
 const formatTime = (time) => {

@@ -301,7 +301,7 @@ const getBusinessHolidayResource = createResource({
   },
 })
 
-if (holidayListActiveStep.value.data && holidayListActiveStep.value.fetchData) {
+if (holidayListActiveStep.value.data) {
   getBusinessHolidayResource.submit()
 } else {
   disableSettingModalOutsideClick.value = true
@@ -328,6 +328,11 @@ const goBack = () => {
       data: { name: holidayListActiveStep.value.previousScreen.data },
       fetchData: true,
     }
+    holidayListActiveStep.value = {
+      screen: 'list',
+      data: null,
+      previousScreen: null,
+    }
     setSettingsActiveTab('SLA Policies')
     return
   }
@@ -335,7 +340,6 @@ const goBack = () => {
     holidayListActiveStep.value = {
       screen: 'list',
       data: null,
-      fetchData: true,
     }
   }, 250)
   showConfirmDialog.value.show = false
@@ -393,9 +397,9 @@ const createBusinessHoliday = () => {
         toast.success(__('Holiday list created'))
         holidayListData.value = data
         holidayListActiveStep.value = {
+          ...holidayListActiveStep.value,
           screen: 'view',
           data: data,
-          fetchData: true,
         }
         getBusinessHolidayResource.submit({
           doctype: 'CRM Holiday List',

@@ -24,12 +24,6 @@ const slaPolicyListData = createListResource({
 
 provide('slaSearchQuery', slaSearchQuery)
 provide('slaPolicyListResource', slaPolicyListData)
-provide('step', slaActiveStep)
-provide('updateStep', updateStep)
-
-function updateStep(newStep, data, fetchData) {
-  slaActiveStep.value = { screen: newStep, data, fetchData }
-}
 
 onUnmounted(() => {
   slaSearchQuery.value = ''

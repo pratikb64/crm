@@ -7,6 +7,10 @@ export const slaActiveStep = ref({
   fetchData: false,
 })
 
+export function updateStep(newStep, data, fetchData) {
+  slaActiveStep.value = { screen: newStep, data, fetchData }
+}
+
 const working_hours = [
   {
     workday: 'Monday',

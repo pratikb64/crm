@@ -177,10 +177,9 @@ import SettingsLayoutBase from '../../Layouts/SettingsLayoutBase.vue'
 import { inject, ref, watch } from 'vue'
 import ShieldCheck from '~icons/lucide/shield-check'
 import { ConfirmDelete } from '../../../utils'
-import { resetSlaData } from './utils'
+import { resetSlaData, updateStep } from './utils'
 
 const slaPolicyListResource = inject('slaPolicyListResource')
-const updateStep = inject('updateStep')
 const slaSearchQuery = inject('slaSearchQuery')
 
 function createNewSlaPolicy() {

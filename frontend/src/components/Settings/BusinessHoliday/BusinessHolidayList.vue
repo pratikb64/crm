@@ -173,7 +173,7 @@ const holidayListSearchQuery = inject('holidayListSearchQuery')
 
 function createNewHolidayList() {
   resetHolidayListData()
-  holidayListActiveStep.value = { screen: 'view', data: null, fetchData: false }
+  holidayListActiveStep.value = { screen: 'view', data: null }
 }
 
 function updateToView(holidayList) {
@@ -181,7 +181,7 @@ function updateToView(holidayList) {
   holidayListActiveStep.value = {
     screen: 'view',
     data: holidayList,
-    fetchData: true,
+    previousScreen: null,
   }
 }
 
@@ -243,7 +243,6 @@ const duplicate = () => {
             holidayListActiveStep.value = {
               screen: 'view',
               data: newHolidayListData,
-              fetchData: true,
             }
           }, 250)
         },
