@@ -1,6 +1,12 @@
 import { dayjs } from 'frappe-ui'
 import { ref } from 'vue'
 
+export const holidayListActiveStep = ref({
+  screen: 'list',
+  data: null,
+  fetchData: false,
+})
+
 export const holidayListDataErrors = ref({
   holiday_list_name: '',
   from_date: '',

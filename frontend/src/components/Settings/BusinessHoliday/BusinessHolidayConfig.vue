@@ -1,6 +1,6 @@
 <template>
-  <BusinessHolidayList v-if="step.screen == 'list'" />
-  <BusinessHolidayView v-else-if="step.screen == 'view'" />
+  <BusinessHolidayList v-if="holidayListActiveStep.screen == 'list'" />
+  <BusinessHolidayView v-else-if="holidayListActiveStep.screen == 'view'" />
 </template>
 
 <script setup>
@@ -8,9 +8,9 @@ import BusinessHolidayList from './BusinessHolidayList.vue'
 import BusinessHolidayView from './BusinessHolidayView.vue'
 import { ref, provide, onUnmounted } from 'vue'
 import { createListResource } from 'frappe-ui'
+import { holidayListActiveStep } from './utils'
 
 const holidayListSearchQuery = ref('')
-const step = ref({ screen: 'list', data: null, fetchData: false })
 
 const holidayListData = createListResource({
   doctype: 'CRM Holiday List',
@@ -24,11 +24,11 @@ const holidayListData = createListResource({
 
 provide('holidayListSearchQuery', holidayListSearchQuery)
 provide('holidayListResource', holidayListData)
-provide('step', step)
+provide('step', holidayListActiveStep)
 provide('updateStep', updateStep)
 
 function updateStep(newStep, data, fetchData) {
-  step.value = { screen: newStep, data, fetchData }
+  holidayListActiveStep.value = { screen: newStep, data, fetchData }
 }
 
 onUnmounted(() => {

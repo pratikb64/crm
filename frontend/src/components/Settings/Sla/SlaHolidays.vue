@@ -182,6 +182,8 @@ import { ConfirmDelete, getGridTemplateColumnsForTable } from '../../../utils'
 import { slaData, slaDataErrors } from './utils'
 import { ref } from 'vue'
 import WorkDayModal from './WorkDayModal.vue'
+import { setSettingsActiveTab } from '../../../composables/settings'
+import { holidayListActiveStep } from '../BusinessHoliday/utils'
 
 const dialog = ref({
   show: false,
@@ -280,9 +282,17 @@ const addWorkDay = () => {
 }
 
 const editHolidayList = (holidayList) => {
-  window.open(
-    `${window.location.origin}/app/crm-holiday-list/${holidayList.name}`,
-  )
+  holidayListActiveStep.value = {
+    screen: 'view',
+    data: {
+      name: holidayList.name,
+    },
+    previousScreen: {
+      screen: 'view',
+      data: slaData.value.name,
+    },
+  }
+  setSettingsActiveTab('Business Holidays')
 }
 
 const formatTime = (time) => {

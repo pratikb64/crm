@@ -248,7 +248,10 @@ import {
   validateHolidayListData,
   updateWeeklyOffDates,
 } from './utils'
-import { disableSettingModalOutsideClick } from '../../../composables/settings'
+import {
+  disableSettingModalOutsideClick,
+  setSettingsActiveTab,
+} from '../../../composables/settings'
 import RecurringHolidaysList from './RecurringHolidaysList.vue'
 import HolidaysTableView from './HolidaysTableView.vue'
 import HolidaysCalendarView from './HolidaysCalendarView.vue'
@@ -256,6 +259,7 @@ import { getFormat, htmlToText } from '../../../utils'
 import AddHolidayModal from './AddHolidayModal.vue'
 import ImportIcon from '~icons/lucide/arrow-down-to-line'
 import DownloadIcon from '~icons/lucide/download'
+import { slaActiveStep } from '../Sla/utils'
 
 const isDirty = ref(false)
 const initialData = ref(null)
@@ -317,9 +321,14 @@ const goBack = () => {
     showConfirmDialog.value = confirmDialogInfo
     return
   }
-  if (!step.value.data && !showConfirmDialog.value.show) {
-    showConfirmDialog.value = confirmDialogInfo
-    return
+  if (step.value.previousScreen) {
+    setSettingsActiveTab('SLA Policies')
+
+    slaActiveStep.value = {
+      screen: 'view',
+      data: { name: step.value.previousScreen.data },
+      fetchData: true,
+    }
   }
   // Workaround fix for settings modal not closing after going back
   setTimeout(() => {
