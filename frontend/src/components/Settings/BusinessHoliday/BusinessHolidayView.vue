@@ -357,20 +357,6 @@ const saveBusinessHoliday = () => {
   }
 
   if (holidayListActiveStep.value.data) {
-    if (isOldBusinessHoliday.value && useNewUI.value) {
-      showConfirmDialog.value = {
-        show: true,
-        title: __('Confirm overwrite'),
-        message: __(
-          'Your old conditions will be overwritten. Are you sure you want to save?',
-        ),
-        onConfirm: () => {
-          updateBusinessHoliday()
-          showConfirmDialog.value.show = false
-        },
-      }
-      return
-    }
     updateBusinessHoliday()
   } else {
     createBusinessHoliday()

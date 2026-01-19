@@ -25,7 +25,6 @@ export const resetHolidayListErrors = () => {
 export const holidayListData = ref({
   holiday_list_name: '',
   description: '',
-  loading: false,
   total_holidays: 0,
   holidays: [],
   from_date: null,
@@ -37,7 +36,6 @@ export const resetHolidayListData = () => {
   holidayListData.value = {
     holiday_list_name: '',
     description: '',
-    loading: false,
     total_holidays: 0,
     holidays: [],
     from_date: null,
@@ -135,71 +133,6 @@ export const getRepetitionText = (repetition) => {
   }
 
   return parts[0] ? `Every ${parts[0]}` : ''
-}
-
-export const validateHoliday = (key) => {
-  const validateField = (field) => {
-    if (key && field !== key) return
-
-    switch (field) {
-      case 'holiday_list_name':
-        if (!holidayListData.value.holiday_list_name?.trim()) {
-          holidayListDataErrors.value.holiday_list_name =
-            'Holiday list name is required'
-        } else {
-          holidayListDataErrors.value.holiday_list_name = ''
-        }
-        break
-      case 'from_date':
-        if (!holidayListData.value.from_date) {
-          holidayListDataErrors.value.from_date = 'Start date is required'
-        } else {
-          holidayListDataErrors.value.from_date = ''
-        }
-
-        if (holidayListData.value.to_date) {
-          const startDate = new Date(holidayListData.value.from_date)
-          const endDate = new Date(holidayListData.value.to_date)
-
-          if (startDate > endDate) {
-            holidayListDataErrors.value.dateRange =
-              'Start date cannot be after end date'
-          } else {
-            holidayListDataErrors.value.dateRange = ''
-          }
-        }
-        break
-      case 'to_date':
-        if (!holidayListData.value.to_date) {
-          holidayListDataErrors.value.to_date = 'End date is required'
-        } else {
-          holidayListDataErrors.value.to_date = ''
-        }
-
-        if (holidayListData.value.from_date) {
-          const startDate = new Date(holidayListData.value.from_date)
-          const endDate = new Date(holidayListData.value.to_date)
-
-          if (startDate > endDate) {
-            holidayListDataErrors.value.dateRange =
-              'Start date cannot be after end date'
-          } else {
-            holidayListDataErrors.value.dateRange = ''
-          }
-        }
-        break
-      default:
-        break
-    }
-  }
-
-  if (key) {
-    validateField(key)
-  } else {
-    Object.keys(holidayListDataErrors.value).forEach(validateField)
-  }
-
-  return holidayListDataErrors.value
 }
 
 export function updateWeeklyOffDates() {

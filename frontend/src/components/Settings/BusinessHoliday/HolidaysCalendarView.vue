@@ -1,6 +1,7 @@
 <template>
   <div class="p-6.5 px-5 rounded-xl border border-outline-gray-2">
     <div class="mb-6.5 flex justify-between items-center">
+      <!-- Year selection -->
       <div class="ml-1">
         <Popover v-if="startYear !== endYear">
           <template #target="{ togglePopover }">
@@ -40,6 +41,7 @@
           {{ startYear }}
         </div>
       </div>
+      <!-- Top navigation buttons -->
       <div class="flex gap-2 items-center">
         <Button
           variant="ghost"
@@ -56,6 +58,7 @@
         />
       </div>
     </div>
+    <!-- Calendar grid -->
     <div
       class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"
       v-if="visibleMonths === 'first-half'"
@@ -80,6 +83,7 @@
         :holidays="holidayListData.holidays"
       />
     </div>
+    <!-- Bottom navigation buttons -->
     <div class="flex gap-2 items-center w-full justify-center mt-8">
       <div
         :class="[
