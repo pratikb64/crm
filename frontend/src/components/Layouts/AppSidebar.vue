@@ -187,6 +187,7 @@ import {
 import router from '@/router'
 import { useStorage } from '@vueuse/core'
 import { ref, reactive, computed, markRaw, onMounted } from 'vue'
+import LucideHome from '~icons/lucide/home'
 
 const { getPinnedViews, getPublicViews } = viewsStore()
 const { toggle: toggleNotificationPanel } = notificationsStore()
@@ -198,6 +199,11 @@ const isFCSite = ref(window.is_fc_site)
 const isDemoSite = ref(window.is_demo_site)
 
 const links = [
+  {
+    label: 'Home',
+    icon: LucideHome,
+    to: 'Home',
+  },
   {
     label: 'Dashboard',
     icon: LucideLayoutDashboard,

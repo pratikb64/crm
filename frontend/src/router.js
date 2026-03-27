@@ -6,7 +6,12 @@ import { viewsStore } from '@/stores/views'
 const routes = [
   {
     path: '/',
+    redirect: '/home',
+  },
+  {
+    path: '/home',
     name: 'Home',
+    component: () => import('@/pages/Home.vue'),
   },
   {
     path: '/notifications',
@@ -146,13 +151,13 @@ router.beforeEach(async (to, from, next) => {
 
   if (isLoggedIn && to.name !== 'Not Permitted' && !isCrmUser()) {
     next({ name: 'Not Permitted' })
-  } else if (to.name === 'Home' && isLoggedIn) {
+  } else if (to.name === 'Leads' && isLoggedIn && !to.params.viewType) {
     const { views, getDefaultView } = viewsStore()
     await views.promise
 
     let defaultView = getDefaultView()
     if (!defaultView) {
-      next({ name: 'Leads' })
+      next()
       return
     }
 
