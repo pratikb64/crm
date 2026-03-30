@@ -254,11 +254,11 @@ def get_upcoming_activities(ticket_type: str = "upcoming_sla"):
 
 
 @frappe.whitelist()
-def get_funnel_conversion():
+def get_funnel_conversion(statuses: list | None = None):
 	"""
-	Returns funnel conversion: leads by status types.
-	Always returns Open, Ongoing, On Hold, Won with 0 if no lead count is present.
-	[{label: 'Open', value: 385}, {label: 'Ongoing', value: 291}, {label: 'On Hold', value: 123}, {label: 'Won', value: 45}]
+	Returns funnel conversion: leads by status.
+	If statuses provided, filter by those statuses, otherwise use default funnel statuses.
+	[{label: 'Lead Status Name', value: 385}, ...]
 	"""
 	from_date = frappe.utils.get_first_day(frappe.utils.nowdate())
 	to_date = frappe.utils.get_last_day(frappe.utils.nowdate())
@@ -266,41 +266,123 @@ def get_funnel_conversion():
 	CRMLead = DocType("CRM Lead")
 	CRMLeadStatus = DocType("CRM Lead Status")
 
-	# Get lead counts by status type for this month
+	# Default funnel statuses if none provided
+	if not statuses:
+		statuses = ["New", "Qualified", "Proposal", "Negotiation", "Won"]
+
+	# Get lead counts by status for this month
 	lead_counts = (
 		frappe.qb.from_(CRMLead)
 		.join(CRMLeadStatus)
 		.on(CRMLead.status == CRMLeadStatus.name)
 		.select(
-			CRMLeadStatus.type,
+			CRMLeadStatus.lead_status,
 			Count("*").as_("count"),
 		)
 		.where(Date(CRMLead.creation).between(from_date, to_date))
-		.where(CRMLeadStatus.type.isin(["Open", "Ongoing", "On Hold", "Won"]))
-		.groupby(CRMLeadStatus.type)
+		.where(CRMLeadStatus.lead_status.isin(statuses))
+		.groupby(CRMLeadStatus.lead_status)
+		.orderby(CRMLeadStatus.position)
 		.run(as_dict=True)
 	)
 
 	# Create a dict for easy lookup
-	counts_by_type = {row["type"]: row["count"] for row in lead_counts}
+	counts_by_status = {row["lead_status"]: row["count"] for row in lead_counts}
 
-	# Always return all required types with 0 as default
-	result = [
-		{"label": "Open", "value": 9},
-		{"label": "Ongoing", "value": 7},
-		{"label": "On Hold", "value": 5},
-		{"label": "Won", "value": 3},
-		# {"label": "Lost", "value": 1000},
-	]
-	# result = [
-	# 	{"label": "Open", "value": counts_by_type.get("Open", 0)},
-	# 	{"label": "Ongoing", "value": counts_by_type.get("Ongoing", 0)},
-	# 	{"label": "On Hold", "value": counts_by_type.get("On Hold", 0)},
-	# 	{"label": "Won", "value": counts_by_type.get("Won", 0)},
-	# 	{"label": "Lost", "value": counts_by_type.get("Lost", 0)},
-	# ]
+	# Return all requested statuses with 0 as default
+	result = []
+	for status in statuses:
+		result.append({
+			"label": status,
+			"value": counts_by_status.get(status, 0)
+		})
 
 	return result
+
+
+@frappe.whitelist()
+def get_lead_statuses():
+	"""
+	Returns all available lead statuses ordered by position.
+	[{label: 'Status Name', value: 'Status Name'}, ...]
+	"""
+	CRMLeadStatus = DocType("CRM Lead Status")
+	
+	statuses = (
+		frappe.qb.from_(CRMLeadStatus)
+		.select(
+			CRMLeadStatus.lead_status,
+			CRMLeadStatus.position,
+		)
+		.orderby(CRMLeadStatus.position)
+		.run(as_dict=True)
+	)
+	
+	return [{"label": status["lead_status"], "value": status["lead_status"]} for status in statuses]
+
+
+@frappe.whitelist()
+def get_funnel_conversion_preferences():
+	"""
+	Get funnel conversion preferences from CRM Dashboard.
+	Returns the selected statuses for funnel conversion chart.
+	"""
+	dashboard = frappe.db.get_value(
+		"CRM Dashboard",
+		{"owner": frappe.session.user},
+		["layout"]
+	)
+	
+	if dashboard:
+		try:
+			layout = json.loads(dashboard)
+			# Find funnel conversion chart and return its preferences
+			for chart in layout:
+				if chart.get("chart") == "funnel_conversion":
+					return chart.get("preferences", {}).get("statuses", ["New", "Qualified", "Proposal", "Negotiation", "Won"])
+		except (json.JSONDecodeError, AttributeError):
+			pass
+	
+	# Return default preferences if no custom ones found
+	return ["New", "Qualified", "Proposal", "Negotiation", "Won"]
+
+
+@frappe.whitelist()
+def save_funnel_conversion_preferences(statuses: list):
+	"""
+	Save funnel conversion preferences to CRM Dashboard.
+	"""
+	dashboard = frappe.db.get_value(
+		"CRM Dashboard",
+		{"owner": frappe.session.user},
+		["name", "layout"]
+	)
+	
+	if not dashboard:
+		# Create new dashboard if doesn't exist
+		dashboard_doc = frappe.new_doc("CRM Dashboard")
+		dashboard_doc.title = f"Dashboard - {frappe.session.user}"
+		dashboard_doc.private = 1
+		dashboard_doc.user = frappe.session.user
+		layout = json.loads(get_default_agent_dashboard())
+	else:
+		dashboard_name, layout_json = dashboard
+		layout = json.loads(layout_json)
+		dashboard_doc = frappe.get_doc("CRM Dashboard", dashboard[0])
+	
+	# Update funnel conversion chart preferences
+	for chart in layout:
+		if chart.get("chart") == "funnel_conversion":
+			if "preferences" not in chart:
+				chart["preferences"] = {}
+			chart["preferences"]["statuses"] = statuses
+			break
+	
+	# Save updated layout
+	dashboard_doc.layout = json.dumps(layout)
+	dashboard_doc.save(ignore_permissions=True)
+	
+	return {"success": True, "statuses": statuses}
 
 
 @frappe.whitelist()

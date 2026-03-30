@@ -22,7 +22,7 @@
           @click="onReset"
         />
         <Button
-          v-if="editing"
+          v-if="editing || isDashboardModified"
           :label="__('Save')"
           variant="subtle"
           :disabled="!isDirty"
@@ -113,7 +113,14 @@
                       : ''
                   "
                 >
-                  <ChartItem :item="layout[index]" />
+                  <ChartItem
+                    :item="layout[index]"
+                    :index="index"
+                    @update:item="layout[index] = $event"
+                    @update:selected-statuses="
+                      layout[$event.index].selected_statuses = $event.statuses
+                    "
+                  />
                 </div>
                 <div
                   v-if="editing"
@@ -145,7 +152,7 @@ import {
   GridLayout,
   toast,
 } from 'frappe-ui'
-import { computed, provide, ref } from 'vue'
+import { computed, provide, ref, watch } from 'vue'
 import ChartItem from '../components/Home/ChartItem.vue'
 import { usersStore } from '@/stores/users'
 import LucidePenLine from '~icons/lucide/pen-line'
@@ -190,7 +197,7 @@ const agentDashboard = createResource({
 const cleanUpLayoutData = (layout) => {
   return layout.map((item) => {
     const l = item.layout
-    return {
+    const result = {
       chart: item.chart,
       layout: {
         x: l.x,
@@ -203,10 +210,16 @@ const cleanUpLayoutData = (layout) => {
         maxH: l.maxH,
       },
     }
+    // Include selected_statuses for funnel conversion charts
+    if (item.chart === 'funnel_conversion' && item.selected_statuses) {
+      result.selected_statuses = item.selected_statuses
+    }
+    return result
   })
 }
 
 const isDashboardModified = computed(() => {
+  if (!agentDashboard.data?.default_layout) return false
   const _layout = cleanUpLayoutData(layout.value)
   const defaultLayout = cleanUpLayoutData(
     JSON.parse(agentDashboard.data.default_layout),
@@ -282,6 +295,7 @@ const chartsDropdown = computed(() => {
         addChart('funnel_conversion', {
           w: 25,
           h: 31,
+          selected_statuses: [],
           // minW: 25,
           // minH: 31,
         }),
@@ -354,6 +368,10 @@ const addChart = (chart, config) => {
       maxW: config.maxW,
       maxH: config.maxH,
     },
+    selected_statuses:
+      chart === 'funnel_conversion'
+        ? config.selected_statuses || []
+        : undefined,
   })
 }
 
@@ -390,4 +408,12 @@ const onLayoutUpdate = (newLayout) => {
     item.layout = newLayout[idx]
   })
 }
+
+watch(
+  () => layout.value,
+  () => {
+    console.log('layout updated', layout.value, isDashboardModified)
+  },
+  { deep: true },
+)
 </script>

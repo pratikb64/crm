@@ -1,11 +1,47 @@
 <template>
   <div class="flex flex-col rounded-md p-4 grow w-full h-full overflow-hidden">
-    <div class="flex flex-col gap-1 shrink-0 mb-6">
-      <div class="text-lg font-semibold text-ink-gray-8">
-        {{ __('Funnel Conversion') }}
-      </div>
-      <div class="text-p-sm text-ink-gray-5">
-        {{ __('Visualize lead-to-deal progress') }}
+    <div class="flex flex-col gap-1 shrink-0 mb-4">
+      <div class="flex items-center justify-between">
+        <div class="flex flex-col gap-1">
+          <div class="text-lg font-semibold text-ink-gray-8">
+            {{ __('Funnel Conversion') }}
+          </div>
+          <div class="text-p-sm text-ink-gray-5">
+            {{ __('Visualize lead-to-deal progress') }}
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <MultiSelect
+            :options="availableStatuses"
+            v-model="selectedStatuses"
+            placeholder="Select Statuses"
+            @update:model-value="onStatusSelectionChange"
+            :hide-search="false"
+            class="w-64"
+          >
+            <template #target="{ togglePopover }">
+              <button
+                @click="togglePopover"
+                class="w-full flex items-center justify-between px-3 py-2 text-sm border border-gray-200 rounded-md hover:bg-gray-50 transition-colors text-left"
+              >
+                <span class="text-gray-700">Select Statuses</span>
+                <svg
+                  class="w-4 h-4 text-gray-500"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              </button>
+            </template>
+          </MultiSelect>
+        </div>
       </div>
     </div>
     <div class="relative grow w-full flex flex-col">
@@ -19,17 +55,50 @@
 </template>
 
 <script setup>
-import { createResource, ECharts } from 'frappe-ui'
-import { computed, onMounted } from 'vue'
+import { createResource, ECharts, MultiSelect } from 'frappe-ui'
+import { computed, onMounted, ref, nextTick } from 'vue'
 
 const props = defineProps({
   data: {
     type: Array,
     required: false,
   },
+  selectedStatuses: {
+    type: Array,
+    default: () => [],
+  },
 })
 
-const colors = ['#F2F2FD', '#E8E8F7', '#D6D5F6', '#B7B6FC', '#928EF5']
+const emit = defineEmits(['update:selectedStatuses'])
+
+// Generate color shades based on number of statuses
+// Base: hsl(242 83.7% 75.9%), varying only L up to max 90
+const colors = computed(() => {
+  const count = chartConfig.value?.length || 5
+  const h = 242
+  const s = 83.7
+  const startL = 75.9
+  const maxL = 90
+
+  return Array.from({ length: count }, (_, i) => {
+    const ratio = count === 1 ? 0 : i / (count - 1)
+    const l = startL + (maxL - startL) * ratio
+    return `hsl(${h} ${s}% ${l.toFixed(1)}%)`
+  })
+})
+
+// State for status selection
+const selectedStatuses = ref(props.selectedStatuses)
+const availableStatuses = ref([])
+
+// Resources
+const getLeadStatusesResource = createResource({
+  url: 'crm.api.agent_home.agent_home.get_lead_statuses',
+  auto: true,
+  onSuccess: (data) => {
+    availableStatuses.value = data
+  },
+})
 
 const getFunnelConversionResource = createResource({
   url: 'crm.api.agent_home.agent_home.get_funnel_conversion',
@@ -41,6 +110,20 @@ const chartConfig = computed(() => {
   }
   return props.data || []
 })
+
+// Methods
+const onStatusSelectionChange = async () => {
+  emit('update:selectedStatuses', selectedStatuses.value)
+}
+
+// Fetch funnel conversion data with selected statuses
+const fetchFunnelConversionData = () => {
+  if (selectedStatuses.value.length > 0) {
+    getFunnelConversionResource.submit({
+      statuses: selectedStatuses.value,
+    })
+  }
+}
 
 const chartOptions = computed(() => {
   if (!chartConfig.value?.length) return null
@@ -94,7 +177,7 @@ const chartOptions = computed(() => {
         data: dataValues.map((val, i) => ({
           name: categories[i],
           value: val,
-          itemStyle: { color: colors[i % colors.length] },
+          itemStyle: { color: colors.value[i % colors.length] },
         })),
         renderItem: function (params, api) {
           const val = dataValues[params.dataIndex]
@@ -138,11 +221,11 @@ const chartOptions = computed(() => {
                   })(),
                 },
                 style: {
-                  fill: api.visual('color'),
+                  fill: colors.value[params.dataIndex % colors.value.length],
                 },
                 emphasis: {
                   style: {
-                    fill: api.visual('color'),
+                    fill: colors.value[params.dataIndex % colors.value.length],
                   },
                 },
               },
@@ -200,7 +283,11 @@ const chartOptions = computed(() => {
 
 onMounted(() => {
   if (!Array.isArray(props.data)) {
-    getFunnelConversionResource.fetch()
+    selectedStatuses.value = props.selectedStatuses
+    // Wait for preferences to load, then fetch data
+    nextTick(() => {
+      fetchFunnelConversionData()
+    })
   }
 })
 </script>

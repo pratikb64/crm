@@ -7,6 +7,10 @@
     <FunnelConversion
       v-else-if="item.chart === 'funnel_conversion'"
       :data="item.data"
+      :selected-statuses="item.selected_statuses"
+      @update:selected-statuses="
+        $emit('update:selected-statuses', { index: index, statuses: $event })
+      "
     />
     <DealsByStage
       v-else-if="item.chart === 'deals_by_stage'"
@@ -20,7 +24,7 @@
       v-else-if="item.chart === 'expected_closure'"
       :data="item.data"
     />
-    <ForecastVsActual
+    <RevenuePerformance
       v-else-if="item.chart === 'forecast_vs_actual'"
       :data="item.data"
     />
@@ -33,12 +37,18 @@ import FunnelConversion from './FunnelConversion.vue'
 import DealsByStage from './DealsByStage.vue'
 import TopOpenDeals from './TopOpenDeals.vue'
 import ExpectedClosure from './ExpectedClosure.vue'
-import ForecastVsActual from './ForecastVsActual.vue'
+import RevenuePerformance from './RevenuePerformance.vue'
 
 defineProps({
   item: {
     type: Object,
     required: true,
   },
+  index: {
+    type: Number,
+    required: true,
+  },
 })
+
+defineEmits(['update:item', 'update:selected-statuses'])
 </script>
