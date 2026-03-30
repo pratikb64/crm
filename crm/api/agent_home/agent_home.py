@@ -6,7 +6,7 @@ from frappe.query_builder.functions import Count, Date, DateFormat, IfNull, Sum
 
 
 def get_default_agent_dashboard():
-	return '[{"chart":"forecast_vs_actual","layout":{"x":30,"y":51,"w":30,"h":31,"minW":30,"minH":31}},{"chart":"expected_closure","layout":{"x":40,"y":32,"w":20,"h":19,"minW":20,"minH":19}},{"chart":"deals_by_stage","layout":{"x":0,"y":32,"w":20,"h":19,"minW":20,"minH":19}},{"chart":"top_open_deals","layout":{"x":20,"y":32,"w":20,"h":19,"minW":20,"minH":19}},{"chart":"funnel_conversion","layout":{"x":0,"y":51,"w":30,"h":31}},{"chart":"upcoming_activities","layout":{"x":0,"y":0,"w":60,"h":32}}]'
+	return '[{"chart":"revenue_performance","layout":{"x":30,"y":51,"w":30,"h":31,"minW":30,"minH":31}},{"chart":"expected_closure","layout":{"x":40,"y":32,"w":20,"h":19,"minW":20,"minH":19}},{"chart":"deals_by_stage","layout":{"x":0,"y":32,"w":20,"h":19,"minW":20,"minH":19}},{"chart":"top_open_deals","layout":{"x":20,"y":32,"w":20,"h":19,"minW":20,"minH":19}},{"chart":"funnel_conversion","layout":{"x":0,"y":51,"w":30,"h":31}},{"chart":"upcoming_activities","layout":{"x":0,"y":0,"w":60,"h":32}}]'
 
 
 def calculate_percentage_change(current_value: float, previous_value: float) -> float:
@@ -102,7 +102,11 @@ def get_dashboard(reset_layout: bool = False):
 		method_name = f"get_{chart['chart']}"
 		if hasattr(frappe.get_attr("crm.api.agent_home.agent_home"), method_name):
 			method = getattr(frappe.get_attr("crm.api.agent_home.agent_home"), method_name)
-			chart["data"] = method()
+			# Pass selected_statuses for funnel conversion chart
+			if chart['chart'] == 'funnel_conversion' and chart.get('selected_statuses'):
+				chart["data"] = method(statuses=chart.get('selected_statuses'))
+			else:
+				chart["data"] = method()
 		else:
 			chart["data"] = None
 
@@ -292,10 +296,7 @@ def get_funnel_conversion(statuses: list | None = None):
 	# Return all requested statuses with 0 as default
 	result = []
 	for status in statuses:
-		result.append({
-			"label": status,
-			"value": counts_by_status.get(status, 0)
-		})
+		result.append({"label": status, "value": counts_by_status.get(status, 0)})
 
 	return result
 
@@ -307,7 +308,7 @@ def get_lead_statuses():
 	[{label: 'Status Name', value: 'Status Name'}, ...]
 	"""
 	CRMLeadStatus = DocType("CRM Lead Status")
-	
+
 	statuses = (
 		frappe.qb.from_(CRMLeadStatus)
 		.select(
@@ -317,7 +318,7 @@ def get_lead_statuses():
 		.orderby(CRMLeadStatus.position)
 		.run(as_dict=True)
 	)
-	
+
 	return [{"label": status["lead_status"], "value": status["lead_status"]} for status in statuses]
 
 
@@ -327,22 +328,20 @@ def get_funnel_conversion_preferences():
 	Get funnel conversion preferences from CRM Dashboard.
 	Returns the selected statuses for funnel conversion chart.
 	"""
-	dashboard = frappe.db.get_value(
-		"CRM Dashboard",
-		{"owner": frappe.session.user},
-		["layout"]
-	)
-	
+	dashboard = frappe.db.get_value("CRM Dashboard", {"owner": frappe.session.user}, ["layout"])
+
 	if dashboard:
 		try:
 			layout = json.loads(dashboard)
 			# Find funnel conversion chart and return its preferences
 			for chart in layout:
 				if chart.get("chart") == "funnel_conversion":
-					return chart.get("preferences", {}).get("statuses", ["New", "Qualified", "Proposal", "Negotiation", "Won"])
+					return chart.get("preferences", {}).get(
+						"statuses", ["New", "Qualified", "Proposal", "Negotiation", "Won"]
+					)
 		except (json.JSONDecodeError, AttributeError):
 			pass
-	
+
 	# Return default preferences if no custom ones found
 	return ["New", "Qualified", "Proposal", "Negotiation", "Won"]
 
@@ -352,12 +351,8 @@ def save_funnel_conversion_preferences(statuses: list):
 	"""
 	Save funnel conversion preferences to CRM Dashboard.
 	"""
-	dashboard = frappe.db.get_value(
-		"CRM Dashboard",
-		{"owner": frappe.session.user},
-		["name", "layout"]
-	)
-	
+	dashboard = frappe.db.get_value("CRM Dashboard", {"owner": frappe.session.user}, ["name", "layout"])
+
 	if not dashboard:
 		# Create new dashboard if doesn't exist
 		dashboard_doc = frappe.new_doc("CRM Dashboard")
@@ -369,7 +364,7 @@ def save_funnel_conversion_preferences(statuses: list):
 		dashboard_name, layout_json = dashboard
 		layout = json.loads(layout_json)
 		dashboard_doc = frappe.get_doc("CRM Dashboard", dashboard[0])
-	
+
 	# Update funnel conversion chart preferences
 	for chart in layout:
 		if chart.get("chart") == "funnel_conversion":
@@ -377,11 +372,11 @@ def save_funnel_conversion_preferences(statuses: list):
 				chart["preferences"] = {}
 			chart["preferences"]["statuses"] = statuses
 			break
-	
+
 	# Save updated layout
 	dashboard_doc.layout = json.dumps(layout)
 	dashboard_doc.save(ignore_permissions=True)
-	
+
 	return {"success": True, "statuses": statuses}
 
 
@@ -415,19 +410,24 @@ def get_deals_by_stage():
 
 	# Return only label + value for the chart component
 	return [{"label": r["label"], "value": round(r["value"] or 0, 2)} for r in result]
-	return [{
-		"label": "Prospecting",
-		"value": 25,
-	}, {
-		"label": "Qualification",
-		"value": 20,
-	}, {
-		"label": "Needs Analysis",
-		"value": 15,
-	}, {
-		"label": "Proposal/Quote",
-		"value": 10,
-	}]
+	return [
+		{
+			"label": "Prospecting",
+			"value": 25,
+		},
+		{
+			"label": "Qualification",
+			"value": 20,
+		},
+		{
+			"label": "Needs Analysis",
+			"value": 15,
+		},
+		{
+			"label": "Proposal/Quote",
+			"value": 10,
+		},
+	]
 
 
 @frappe.whitelist()
@@ -488,7 +488,6 @@ def get_top_open_deals():
 		limit=5,
 	)
 
-
 	colors = ["green", "pink", "red", "blue", "gray"]
 	return [
 		{
@@ -502,7 +501,7 @@ def get_top_open_deals():
 
 
 @frappe.whitelist()
-def get_forecast_vs_actual():
+def get_revenue_performance():
 	"""
 	Returns monthly forecasted vs actual revenue for the last 6 months.
 	Compatible with ForecastVsActual.vue's defaultData shape:

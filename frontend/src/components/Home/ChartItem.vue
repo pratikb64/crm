@@ -25,7 +25,7 @@
       :data="item.data"
     />
     <RevenuePerformance
-      v-else-if="item.chart === 'forecast_vs_actual'"
+      v-else-if="item.chart === 'revenue_performance'"
       :data="item.data"
     />
   </div>

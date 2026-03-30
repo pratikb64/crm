@@ -10,17 +10,34 @@
     </div>
     <div class="relative grow w-full flex flex-col">
       <ECharts
-        v-if="chartOptions"
+        v-if="chartOptions && isForecastingEnabled"
         :options="chartOptions"
         class="absolute inset-0 w-full h-full"
       />
+      <EmptyState2
+        v-if="!isForecastingEnabled"
+        :title="__('Forecasting Disabled')"
+        :description="
+          __('Enable it to track revenue performance against targets')
+        "
+      >
+        <template #action>
+          <Button variant="subtle" @click="openForecastingSettings">
+            {{ __('Enable') }}
+          </Button>
+        </template>
+      </EmptyState2>
     </div>
   </div>
 </template>
 
 <script setup>
-import { createResource, ECharts } from 'frappe-ui'
+import { createResource, ECharts, Button } from 'frappe-ui'
 import { computed, onMounted } from 'vue'
+import { getSettings } from '@/stores/settings'
+import { showSettings, activeSettingsPage } from '@/composables/settings'
+import { formatCurrency } from '@/utils/numberFormat'
+import EmptyState2 from '@/components/ListViews/EmptyState2.vue'
 
 const props = defineProps({
   data: {
@@ -29,39 +46,14 @@ const props = defineProps({
   },
 })
 
-// Fallback default data while API loads
-const defaultData = {
-  categories: [
-    'Jan',
-    '',
-    '',
-    'Feb',
-    '',
-    '',
-    'Mar',
-    '',
-    '',
-    'Apr',
-    '',
-    '',
-    'May',
-    '',
-    '',
-    'Jun',
-    '',
-  ],
-  forecast: [
-    18000, 37000, 31000, 64000, 59000, 70000, 109000, 76000, 67000, 116000,
-    121000, 144000, 119000, 158000, 146000, 174000, 175000,
-  ],
-  actual: [
-    0, 31000, 32000, 21000, 51000, 52000, 79000, 66000, 74000, 90000, 93000,
-    119000, 101000, 117000, 129000,
-  ],
-}
+const { settings } = getSettings()
+
+const isForecastingEnabled = computed(() => {
+  return Boolean(settings.value?.enable_forecasting) === true
+})
 
 const getForecastResource = createResource({
-  url: 'crm.api.agent_home.agent_home.get_forecast_vs_actual',
+  url: 'crm.api.agent_home.agent_home.get_revenue_performance',
 })
 
 const chartConfig = computed(() => {
@@ -71,7 +63,7 @@ const chartConfig = computed(() => {
   if (props.data && props.data.forecast && props.data.forecast.length > 0) {
     return props.data
   }
-  return defaultData
+  return null
 })
 
 const chartOptions = computed(() => {
@@ -103,7 +95,7 @@ const chartOptions = computed(() => {
         'box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); border-radius: 8px;',
       valueFormatter: (value) => {
         if (value == null) return ''
-        return '$' + value.toLocaleString()
+        return formatCurrency(value)
       },
     },
     legend: {
@@ -133,8 +125,6 @@ const chartOptions = computed(() => {
     yAxis: {
       type: 'value',
       min: 0,
-      max: 200000,
-      interval: 25000,
       axisLine: { show: false },
       axisTick: { show: false },
       splitLine: {
@@ -147,8 +137,8 @@ const chartOptions = computed(() => {
         color: '#6B7280',
         fontSize: 12,
         formatter: (value) => {
-          if (value === 0) return '$0'
-          return '$' + value / 1000 + 'k'
+          if (value === 0) return formatCurrency(0)
+          return formatCurrency(value, null, 'USD', 0)
         },
       },
     },
@@ -194,4 +184,9 @@ onMounted(() => {
     getForecastResource.fetch()
   }
 })
+
+function openForecastingSettings() {
+  activeSettingsPage.value = 'Forecasting'
+  showSettings.value = true
+}
 </script>

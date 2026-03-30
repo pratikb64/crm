@@ -214,6 +214,7 @@ const cleanUpLayoutData = (layout) => {
     if (item.chart === 'funnel_conversion' && item.selected_statuses) {
       result.selected_statuses = item.selected_statuses
     }
+    console.log('🚀 ~ cleanUpLayoutData ~ result:', result)
     return result
   })
 }
@@ -233,17 +234,11 @@ provide('dashboardData', layout)
 const createDashboard = createResource({
   url: 'frappe.client.insert',
   makeParams() {
-    const layoutData = layout.value.map((item) => {
-      return {
-        chart: item.chart,
-        layout: item.layout,
-      }
-    })
     return {
       doc: {
         doctype: 'CRM Dashboard',
         title: getUser().name,
-        layout: JSON.stringify(cleanUpLayoutData(layoutData)),
+        layout: JSON.stringify(cleanUpLayoutData(layout.value)),
       },
     }
   },
@@ -256,17 +251,11 @@ const createDashboard = createResource({
 const saveDashboard = createResource({
   url: 'frappe.client.set_value',
   makeParams() {
-    const layoutData = layout.value.map((item) => {
-      return {
-        chart: item.chart,
-        layout: item.layout,
-      }
-    })
     return {
       doctype: 'CRM Dashboard',
       name: getUser().name,
       fieldname: 'layout',
-      value: JSON.stringify(cleanUpLayoutData(layoutData)),
+      value: JSON.stringify(cleanUpLayoutData(layout.value)),
     }
   },
   onSuccess() {
@@ -335,9 +324,9 @@ const chartsDropdown = computed(() => {
     },
     {
       label: __('Forecast vs Actual'),
-      chart: 'forecast_vs_actual',
+      chart: 'revenue_performance',
       onClick: () =>
-        addChart('forecast_vs_actual', {
+        addChart('revenue_performance', {
           w: 30,
           h: 31,
           minW: 30,

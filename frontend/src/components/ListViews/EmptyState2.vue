@@ -6,12 +6,17 @@
         'radial-gradient(ellipse at center, rgba(255, 255, 255, 1) 30%, rgba(255, 255, 255, 0.8) 30%, rgba(255, 255, 255, 0) 70%)',
     }"
   >
-    <div class="space-y-1.5 w-64 p-2 rounded-2xl border-0">
-      <div class="text-ink-gray-9 font-semibold text-center text-base">
-        {{ title }}
+    <div class="space-y-3 w-64 p-2 rounded-2xl border-0">
+      <div class="space-y-1.5">
+        <div class="text-ink-gray-9 font-semibold text-center text-base">
+          {{ title }}
+        </div>
+        <div class="text-ink-gray-5 text-center text-p-sm">
+          {{ description }}
+        </div>
       </div>
-      <div class="text-ink-gray-5 text-center text-p-sm">
-        {{ description }}
+      <div v-if="$slots.action" class="flex justify-center pointer-events-auto">
+        <slot name="action"></slot>
       </div>
     </div>
   </div>

@@ -12,7 +12,8 @@
         </div>
         <div class="flex items-center gap-2">
           <MultiSelect
-            :options="availableStatuses"
+            v-if="getLeadStatusesResource.fetched"
+            :options="getLeadStatusesResource.data"
             v-model="selectedStatuses"
             placeholder="Select Statuses"
             @update:model-value="onStatusSelectionChange"
@@ -56,7 +57,7 @@
 
 <script setup>
 import { createResource, ECharts, MultiSelect } from 'frappe-ui'
-import { computed, onMounted, ref, nextTick } from 'vue'
+import { computed, onMounted, ref, nextTick, watch } from 'vue'
 
 const props = defineProps({
   data: {
@@ -89,16 +90,13 @@ const colors = computed(() => {
 
 // State for status selection
 const selectedStatuses = ref(props.selectedStatuses)
-const availableStatuses = ref([])
 
 // Resources
 const getLeadStatusesResource = createResource({
   url: 'crm.api.agent_home.agent_home.get_lead_statuses',
   auto: true,
-  onSuccess: (data) => {
-    availableStatuses.value = data
-  },
 })
+console.log('🚀 ~ getLeadStatusesResource:', getLeadStatusesResource)
 
 const getFunnelConversionResource = createResource({
   url: 'crm.api.agent_home.agent_home.get_funnel_conversion',
@@ -114,6 +112,8 @@ const chartConfig = computed(() => {
 // Methods
 const onStatusSelectionChange = async () => {
   emit('update:selectedStatuses', selectedStatuses.value)
+  // Fetch new data when statuses change
+  fetchFunnelConversionData()
 }
 
 // Fetch funnel conversion data with selected statuses
@@ -290,4 +290,18 @@ onMounted(() => {
     })
   }
 })
+
+// Watch for changes in props.selectedStatuses
+watch(
+  () => props.selectedStatuses,
+  (newStatuses) => {
+    if (
+      JSON.stringify(newStatuses) !== JSON.stringify(selectedStatuses.value)
+    ) {
+      selectedStatuses.value = newStatuses
+      fetchFunnelConversionData()
+    }
+  },
+  { deep: true },
+)
 </script>
