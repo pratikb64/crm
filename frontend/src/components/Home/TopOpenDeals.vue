@@ -37,7 +37,7 @@
       <div
         v-for="deal in chartConfig"
         :key="deal.label"
-        class="flex items-center justify-between cursor-pointer rounded-md p-1 -m-1 transition-colors"
+        class="flex items-center justify-between cursor-pointer rounded-md transition-colors"
         @click="goToDeal(deal)"
       >
         <div class="flex items-center gap-3">

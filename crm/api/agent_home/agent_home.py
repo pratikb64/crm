@@ -480,12 +480,13 @@ def get_expected_closure():
 
 @frappe.whitelist()
 def get_top_open_deals():
+	status = frappe.get_all("CRM Deal Status", filters={"type": ["in", ["Open", "Ongoing"]]}, pluck="name")
 	deals = frappe.get_all(
 		"CRM Deal",
-		filters={"status": "Open"},
-		fields=["name", "organization", "annual_revenue"],
-		order_by="annual_revenue desc",
-		limit=5,
+		filters={"status": ["in", status]},
+		fields=["name", "organization", "expected_deal_value"],
+		order_by="expected_deal_value desc",
+		limit=4,
 	)
 
 	colors = ["green", "pink", "red", "blue", "gray"]
@@ -493,7 +494,7 @@ def get_top_open_deals():
 		{
 			"name": deal.name,
 			"label": deal.organization or deal.name,
-			"value": deal.annual_revenue or 0,
+			"value": deal.expected_deal_value or 0,
 			"color": colors[i % len(colors)],
 		}
 		for i, deal in enumerate(deals)
