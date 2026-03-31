@@ -408,11 +408,23 @@ def get_deal_statuses():
 def get_deals_by_stage(stages: list | None = None):
 	"""
 	Returns deals grouped by status with total deal value.
+	Always returns top 3 stages by value + Others (even if values are 0).
 	[{label: 'Prospecting', value: 12000}, ...]
 	"""
 	CRMDeal = DocType("CRM Deal")
 	CRMDealStatus = DocType("CRM Deal Status")
 
+	# Get all non-Lost deal statuses first
+	all_statuses = (
+		frappe.qb.from_(CRMDealStatus)
+		.select(CRMDealStatus.deal_status)
+		.where(CRMDealStatus.type.notin(["Lost"]))
+		.orderby(CRMDealStatus.position)
+		.run(as_dict=True)
+	)
+	all_status_names = [s["deal_status"] for s in all_statuses]
+
+	# Get deal values by status
 	query = (
 		frappe.qb.from_(CRMDeal)
 		.join(CRMDealStatus)
@@ -424,14 +436,43 @@ def get_deals_by_stage(stages: list | None = None):
 		.where(CRMDealStatus.type.notin(["Lost"]))
 	)
 
-	# Filter by specific stages if provided
+	# Filter by specific stages if provided (for backwards compatibility)
 	if stages and len(stages) > 0:
 		query = query.where(CRMDeal.status.isin(stages))
 	result = query.groupby(CRMDeal.status).run(as_dict=True)
 
+	# Create a lookup of values by label
+	values_by_status = {r["label"]: round(r["value"] or 0, 2) for r in result}
 
-	# Return only label + value for the chart component
-	return [{"label": r["label"], "value": round(r["value"] or 0, 2)} for r in result]
+	# Build complete list with all statuses (including ones with 0 value)
+	formatted_result = [
+		{"label": status, "value": values_by_status.get(status, 0)}
+		for status in all_status_names
+	]
+
+	# Sort by value descending to get top stages
+	formatted_result.sort(key=lambda x: x["value"], reverse=True)
+
+	# Always return top 3 + Others (when more than 4 stages exist)
+	if len(formatted_result) > 4:
+		# Take top 3 and combine the rest as 'Others'
+		top_3 = formatted_result[:3]
+		others_value = sum(item["value"] for item in formatted_result[3:])
+		return top_3 + [{"label": "Others", "value": round(others_value, 2)}]
+
+	# For 4 or fewer stages, still group remaining as Others if there are more than 3
+	if len(formatted_result) == 4:
+		top_3 = formatted_result[:3]
+		others_value = formatted_result[3]["value"]
+		return top_3 + [{"label": "Others", "value": round(others_value, 2)}]
+
+	# For 3 or fewer stages, pad with empty stages to always show 4 items (3 + Others)
+	while len(formatted_result) < 3:
+		formatted_result.append({"label": "-", "value": 0})
+
+	# Add Others with 0 value
+	others_value = sum(item["value"] for item in formatted_result[3:]) if len(formatted_result) > 3 else 0
+	return formatted_result[:3] + [{"label": "Others", "value": round(others_value, 2)}]
 
 
 @frappe.whitelist()

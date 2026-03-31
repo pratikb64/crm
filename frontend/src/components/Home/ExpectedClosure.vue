@@ -11,11 +11,11 @@
     <div class="text-xl font-bold text-gray-900 mb-2">
       {{ formattedActual }} / {{ formattedProjected }}
     </div>
-    <div class="relative grow w-full flex flex-col justify-center pb-8 mt-1">
+    <div class="relative grow w-full flex flex-col justify-center pb-6">
       <ECharts
         v-if="chartOptions"
         :options="chartOptions"
-        class="w-full h-15"
+        class="w-full h-13"
       />
     </div>
   </div>
@@ -115,7 +115,7 @@ const chartOptions = computed(() => {
             },
             style: {
               stroke: '#374151',
-              lineWidth: 2,
+              lineWidth: 1.5,
             },
           }
         },

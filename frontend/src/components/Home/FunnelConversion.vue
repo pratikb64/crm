@@ -99,7 +99,7 @@ const colors = computed(() => {
   const maxL = 90
 
   return Array.from({ length: count }, (_, i) => {
-    const ratio = count === 1 ? 0 : i / (count - 1)
+    const ratio = count === 1 ? 0 : (count - 1 - i) / (count - 1)
     const l = startL + (maxL - startL) * ratio
     return `hsl(${h} ${s}% ${l.toFixed(1)}%)`
   })
@@ -137,8 +137,17 @@ const onStatusSelectionChange = async () => {
 // Fetch funnel conversion data with selected statuses
 const fetchFunnelConversionData = () => {
   if (selectedStatuses.value.length > 0) {
+    // Sort statuses by their position in the lead status list
+    const sortedStatuses = [...selectedStatuses.value].sort((a, b) => {
+      const aStatus = getLeadStatusesResource.data.find((s) => s.value === a)
+      const bStatus = getLeadStatusesResource.data.find((s) => s.value === b)
+      const aIndex = getLeadStatusesResource.data.indexOf(aStatus)
+      const bIndex = getLeadStatusesResource.data.indexOf(bStatus)
+      return aIndex - bIndex
+    })
+
     getFunnelConversionResource.submit({
-      statuses: selectedStatuses.value,
+      statuses: sortedStatuses,
     })
   }
 }
