@@ -58,6 +58,7 @@
 import { createResource, ECharts } from 'frappe-ui'
 import { computed, onMounted } from 'vue'
 import EmptyState2 from '../ListViews/EmptyState2.vue'
+import { formatCurrency } from '../../utils/numberFormat.js'
 
 const props = defineProps({
   data: {
@@ -78,13 +79,6 @@ const chartConfig = computed(() => {
   }
   return props.data || []
 })
-
-const formatCurrency = (value) => {
-  if (value >= 1000) {
-    return `$${Number.isInteger(value / 1000) ? value / 1000 : (value / 1000).toFixed(1)}k`
-  }
-  return `$${value}`
-}
 
 const chartOptions = computed(() => {
   if (!chartConfig.value?.length) return null
@@ -149,7 +143,7 @@ const chartOptions = computed(() => {
 })
 
 onMounted(() => {
-  if (!Array.isArray(props.data)) {
+  if (!props.data || props.data.length === 0) {
     getDealsByStageResource.fetch()
   }
 })

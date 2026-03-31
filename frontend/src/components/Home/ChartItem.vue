@@ -50,5 +50,5 @@ defineProps({
   },
 })
 
-defineEmits(['update:item', 'update:selected-statuses'])
+defineEmits(['update:selected-statuses'])
 </script>

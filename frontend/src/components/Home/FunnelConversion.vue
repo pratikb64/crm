@@ -47,9 +47,16 @@
     </div>
     <div class="relative grow w-full flex flex-col">
       <ECharts
-        v-if="chartOptions"
+        v-if="chartOptions && selectedStatuses.length > 0"
         :options="chartOptions"
         class="absolute inset-0 w-full h-full"
+      />
+      <EmptyState2
+        v-if="selectedStatuses.length === 0"
+        :title="__('No Statuses Selected')"
+        :description="
+          __('Select lead statuses to visualize funnel conversion data')
+        "
       />
     </div>
   </div>
@@ -58,6 +65,7 @@
 <script setup>
 import { createResource, ECharts, MultiSelect } from 'frappe-ui'
 import { computed, onMounted, ref, nextTick, watch } from 'vue'
+import EmptyState2 from '../ListViews/EmptyState2.vue'
 
 const props = defineProps({
   data: {
@@ -96,7 +104,6 @@ const getLeadStatusesResource = createResource({
   url: 'crm.api.agent_home.agent_home.get_lead_statuses',
   auto: true,
 })
-console.log('🚀 ~ getLeadStatusesResource:', getLeadStatusesResource)
 
 const getFunnelConversionResource = createResource({
   url: 'crm.api.agent_home.agent_home.get_funnel_conversion',
@@ -113,7 +120,9 @@ const chartConfig = computed(() => {
 const onStatusSelectionChange = async () => {
   emit('update:selectedStatuses', selectedStatuses.value)
   // Fetch new data when statuses change
-  fetchFunnelConversionData()
+  if (selectedStatuses.value.length > 0) {
+    fetchFunnelConversionData()
+  }
 }
 
 // Fetch funnel conversion data with selected statuses

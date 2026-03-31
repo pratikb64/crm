@@ -386,9 +386,6 @@ def get_deals_by_stage():
 	Returns deals grouped by status with total deal value.
 	[{label: 'Prospecting', value: 12000}, ...]
 	"""
-	from_date = frappe.utils.get_first_day(frappe.utils.nowdate())
-	to_date = frappe.utils.get_last_day(frappe.utils.nowdate())
-
 	CRMDeal = DocType("CRM Deal")
 	CRMDealStatus = DocType("CRM Deal Status")
 
@@ -399,35 +396,14 @@ def get_deals_by_stage():
 		.select(
 			CRMDeal.status.as_("label"),
 			Sum(IfNull(CRMDeal.deal_value, 0) * IfNull(CRMDeal.exchange_rate, 1)).as_("value"),
-			CRMDealStatus.position,
 		)
-		.where(Date(CRMDeal.creation).between(from_date, to_date))
 		.where(CRMDealStatus.type.notin(["Lost"]))
-		.groupby(CRMDeal.status, CRMDealStatus.position)
-		.orderby(CRMDealStatus.position)
+		.groupby(CRMDeal.status)
 		.run(as_dict=True)
 	)
 
 	# Return only label + value for the chart component
 	return [{"label": r["label"], "value": round(r["value"] or 0, 2)} for r in result]
-	return [
-		{
-			"label": "Prospecting",
-			"value": 25,
-		},
-		{
-			"label": "Qualification",
-			"value": 20,
-		},
-		{
-			"label": "Needs Analysis",
-			"value": 15,
-		},
-		{
-			"label": "Proposal/Quote",
-			"value": 10,
-		},
-	]
 
 
 @frappe.whitelist()
@@ -438,38 +414,44 @@ def get_expected_closure():
 	"""
 	from_date = frappe.utils.get_first_day(frappe.utils.nowdate())
 	to_date = frappe.utils.get_last_day(frappe.utils.nowdate())
+	to_date_plus_one = frappe.utils.add_days(to_date, 1)
 
 	CRMDeal = DocType("CRM Deal")
 	CRMDealStatus = DocType("CRM Deal Status")
 
-	result = (
+	# Get actual won deals for this month (based on when they were actually won)
+	actual_result = (
 		frappe.qb.from_(CRMDeal)
 		.join(CRMDealStatus)
 		.on(CRMDeal.status == CRMDealStatus.name)
 		.select(
 			Sum(
-				frappe.qb.terms.Case()
-				.when(
-					CRMDealStatus.type == "Won",
-					IfNull(CRMDeal.deal_value, 0) * IfNull(CRMDeal.exchange_rate, 1),
-				)
-				.else_(0)
+				IfNull(CRMDeal.deal_value, 0) * IfNull(CRMDeal.exchange_rate, 1)
 			).as_("actual"),
+		)
+		.where(CRMDealStatus.type == "Won")
+		.where(CRMDeal.closed_date >= from_date)
+		.where(CRMDeal.closed_date < to_date_plus_one)
+		.run(as_dict=True)
+	)
+
+	# Get projected deals expected to close this month
+	projected_result = (
+		frappe.qb.from_(CRMDeal)
+		.join(CRMDealStatus)
+		.on(CRMDeal.status == CRMDealStatus.name)
+		.select(
 			Sum(
-				frappe.qb.terms.Case()
-				.when(
-					CRMDealStatus.type.notin(["Lost"]),
-					IfNull(CRMDeal.expected_deal_value, 0) * IfNull(CRMDeal.exchange_rate, 1),
-				)
-				.else_(0)
+				IfNull(CRMDeal.expected_deal_value, 0) * IfNull(CRMDeal.exchange_rate, 1)
 			).as_("projected"),
 		)
+		.where(CRMDealStatus.type.notin(["Lost"]))
 		.where(Date(CRMDeal.expected_closure_date).between(from_date, to_date))
 		.run(as_dict=True)
 	)
 
-	actual = round(result[0]["actual"] or 0, 2) if result else 0
-	projected = round(result[0]["projected"] or 0, 2) if result else 0
+	actual = round(actual_result[0]["actual"] or 0, 2) if actual_result else 0
+	projected = round(projected_result[0]["projected"] or 0, 2) if projected_result else 0
 
 	# Ensure projected >= actual (projected includes actual won deals)
 	if projected < actual:
