@@ -381,7 +381,31 @@ def save_funnel_conversion_preferences(statuses: list):
 
 
 @frappe.whitelist()
-def get_deals_by_stage():
+def get_deal_statuses():
+	"""
+	Returns all available deal statuses ordered by position.
+	[{label: 'Status Name', value: 'Status Name'}, ...]
+	"""
+	CRMDealStatus = DocType("CRM Deal Status")
+
+	statuses = (
+		frappe.qb.from_(CRMDealStatus)
+		.select(
+			CRMDealStatus.name,
+			CRMDealStatus.deal_status,
+			CRMDealStatus.position,
+		)
+		.orderby(CRMDealStatus.position)
+		.run(as_dict=True)
+	)
+
+	result = [{"label": status["deal_status"], "value": status["name"]} for status in statuses]
+	
+	return result
+
+
+@frappe.whitelist()
+def get_deals_by_stage(stages: list | None = None):
 	"""
 	Returns deals grouped by status with total deal value.
 	[{label: 'Prospecting', value: 12000}, ...]
@@ -389,7 +413,7 @@ def get_deals_by_stage():
 	CRMDeal = DocType("CRM Deal")
 	CRMDealStatus = DocType("CRM Deal Status")
 
-	result = (
+	query = (
 		frappe.qb.from_(CRMDeal)
 		.join(CRMDealStatus)
 		.on(CRMDeal.status == CRMDealStatus.name)
@@ -398,9 +422,13 @@ def get_deals_by_stage():
 			Sum(IfNull(CRMDeal.deal_value, 0) * IfNull(CRMDeal.exchange_rate, 1)).as_("value"),
 		)
 		.where(CRMDealStatus.type.notin(["Lost"]))
-		.groupby(CRMDeal.status)
-		.run(as_dict=True)
 	)
+
+	# Filter by specific stages if provided
+	if stages and len(stages) > 0:
+		query = query.where(CRMDeal.status.isin(stages))
+	result = query.groupby(CRMDeal.status).run(as_dict=True)
+
 
 	# Return only label + value for the chart component
 	return [{"label": r["label"], "value": round(r["value"] or 0, 2)} for r in result]

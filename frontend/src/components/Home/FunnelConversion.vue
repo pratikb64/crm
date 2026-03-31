@@ -25,7 +25,16 @@
                 @click="togglePopover"
                 class="w-full flex items-center justify-between px-3 py-2 text-sm border border-gray-200 rounded-md hover:bg-gray-50 transition-colors text-left"
               >
-                <span class="text-gray-700">Select Statuses</span>
+                <span class="text-gray-700">
+                  {{
+                    selectedStatuses.length === 0
+                      ? 'Select Statuses'
+                      : selectedStatuses.length ===
+                          getLeadStatusesResource.data?.length
+                        ? 'All Statuses'
+                        : `${selectedStatuses.length} Selected`
+                  }}
+                </span>
                 <svg
                   class="w-4 h-4 text-gray-500"
                   fill="none"
