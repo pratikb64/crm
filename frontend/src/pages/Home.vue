@@ -61,7 +61,7 @@
   </LayoutHeader>
   <div class="h-screen overflow-auto">
     <div
-      class="flex flex-col p-1 pt-4 md:p-5 mx-auto max-w-[1500px] w-full grow relative h-full"
+      class="flex flex-col p-1 pt-4 md:p-4 md:px-3 mx-auto max-w-[1500px] w-full grow relative h-full"
     >
       <div class="grow pb-12">
         <div
