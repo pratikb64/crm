@@ -555,15 +555,15 @@ def get_top_open_deals():
 @frappe.whitelist()
 def get_revenue_performance():
 	"""
-	Returns monthly forecasted vs actual revenue for the last 6 months.
+	Returns monthly forecasted vs actual revenue for the last 12 months.
 	Compatible with ForecastVsActual.vue's defaultData shape:
 	{categories: [...], forecast: [...], actual: [...]}
 	"""
 	CRMDeal = DocType("CRM Deal")
 	CRMDealStatus = DocType("CRM Deal Status")
 
-	# Last 6 months
-	six_months_ago = frappe.utils.add_months(frappe.utils.nowdate(), -6)
+	# Last 12 months
+	twelve_months_ago = frappe.utils.add_months(frappe.utils.nowdate(), -12)
 	today = frappe.utils.nowdate()
 
 	forecasted_value = (
@@ -595,7 +595,7 @@ def get_revenue_performance():
 			Sum(forecasted_value).as_("forecasted"),
 			Sum(actual_value).as_("actual"),
 		)
-		.where(CRMDeal.expected_closure_date >= six_months_ago)
+		.where(CRMDeal.expected_closure_date >= twelve_months_ago)
 		.where(CRMDeal.expected_closure_date.isnotnull())
 		.groupby(DateFormat(CRMDeal.expected_closure_date, "%Y-%m"))
 		.orderby(DateFormat(CRMDeal.expected_closure_date, "%Y-%m"))
@@ -610,13 +610,13 @@ def get_revenue_performance():
 			"actual": round(row["actual"] or 0, 2),
 		}
 
-	# Generate all months in the last 6 months (inclusive)
+	# Generate all months in the last 12 months (inclusive)
 	categories = []
 	forecast = []
 	actual = []
 
 	today_dt = frappe.utils.get_datetime(today)
-	for i in range(5, -1, -1):
+	for i in range(11, -1, -1):
 		month_dt = frappe.utils.add_months(today_dt, -i)
 		key = month_dt.strftime("%Y-%m")
 		label = month_dt.strftime("%b")
