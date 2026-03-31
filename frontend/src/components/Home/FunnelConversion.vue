@@ -119,10 +119,26 @@ const getFunnelConversionResource = createResource({
 })
 
 const chartConfig = computed(() => {
+  let data = []
   if (getFunnelConversionResource.fetched) {
-    return getFunnelConversionResource.data
+    data = getFunnelConversionResource.data || []
+  } else {
+    data = props.data || []
   }
-  return props.data || []
+
+  // Sort data by lead status order when lead statuses are available
+  if (getLeadStatusesResource.fetched && data.length > 0) {
+    const statusOrder = new Map(
+      getLeadStatusesResource.data.map((s, i) => [s.value, i]),
+    )
+    data = [...data].sort((a, b) => {
+      const aIndex = statusOrder.get(a.label) ?? Infinity
+      const bIndex = statusOrder.get(b.label) ?? Infinity
+      return aIndex - bIndex
+    })
+  }
+
+  return data
 })
 
 // Methods
@@ -137,17 +153,8 @@ const onStatusSelectionChange = async () => {
 // Fetch funnel conversion data with selected statuses
 const fetchFunnelConversionData = () => {
   if (selectedStatuses.value.length > 0) {
-    // Sort statuses by their position in the lead status list
-    const sortedStatuses = [...selectedStatuses.value].sort((a, b) => {
-      const aStatus = getLeadStatusesResource.data.find((s) => s.value === a)
-      const bStatus = getLeadStatusesResource.data.find((s) => s.value === b)
-      const aIndex = getLeadStatusesResource.data.indexOf(aStatus)
-      const bIndex = getLeadStatusesResource.data.indexOf(bStatus)
-      return aIndex - bIndex
-    })
-
     getFunnelConversionResource.submit({
-      statuses: sortedStatuses,
+      statuses: selectedStatuses.value,
     })
   }
 }
