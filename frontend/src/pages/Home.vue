@@ -21,8 +21,9 @@
           :disabled="isLoading"
           @click="onReset"
         />
+        <!-- v-if="editing || isDirty" -->
         <Button
-          v-if="editing || isDashboardModified"
+          v-if="editing || isDirty"
           :label="__('Save')"
           variant="subtle"
           :disabled="!isDirty"
@@ -117,9 +118,7 @@
                     :item="layout[index]"
                     :index="index"
                     @update:item="layout[index] = $event"
-                    @update:selected-statuses="
-                      layout[$event.index].selected_statuses = $event.statuses
-                    "
+                    @update:selected-statuses="onStatusSelectionChange"
                   />
                 </div>
                 <div
@@ -165,7 +164,10 @@ const layout = ref([])
 const oldLayout = ref([])
 
 const isDirty = computed(() => {
-  return JSON.stringify(layout.value) !== JSON.stringify(oldLayout.value)
+  return (
+    JSON.stringify(cleanUpLayoutData(layout.value)) !==
+    JSON.stringify(cleanUpLayoutData(oldLayout.value))
+  )
 })
 
 const isLoading = computed(() => {
@@ -191,6 +193,7 @@ const agentDashboard = createResource({
   },
   onSuccess(data) {
     layout.value = data.layout
+    oldLayout.value = JSON.parse(JSON.stringify(data.layout))
   },
 })
 
@@ -211,10 +214,9 @@ const cleanUpLayoutData = (layout) => {
       },
     }
     // Include selected_statuses for funnel conversion charts
-    if (item.chart === 'funnel_conversion' && item.selected_statuses) {
+    if (item.chart === 'funnel_conversion') {
       result.selected_statuses = item.selected_statuses
     }
-    console.log('🚀 ~ cleanUpLayoutData ~ result:', result)
     return result
   })
 }
@@ -260,6 +262,7 @@ const saveDashboard = createResource({
   },
   onSuccess() {
     toast.success(__('Dashboard saved'))
+    oldLayout.value = JSON.parse(JSON.stringify(layout.value))
   },
 })
 
@@ -365,7 +368,6 @@ const addChart = (chart, config) => {
 }
 
 const onEdit = () => {
-  oldLayout.value = JSON.parse(JSON.stringify(layout.value))
   editing.value = true
 }
 
@@ -382,7 +384,7 @@ const onSave = () => {
 }
 
 const onCancel = () => {
-  layout.value = oldLayout.value
+  layout.value = JSON.parse(JSON.stringify(oldLayout.value))
   editing.value = false
 }
 
@@ -398,11 +400,13 @@ const onLayoutUpdate = (newLayout) => {
   })
 }
 
-watch(
-  () => layout.value,
-  () => {
-    console.log('layout updated', layout.value, isDashboardModified)
-  },
-  { deep: true },
-)
+const onStatusSelectionChange = (event) => {
+  // Update the selected_statuses for the funnel_conversion chart
+  const funnelChart = layout.value.find(
+    (item) => item.chart === 'funnel_conversion',
+  )
+  if (funnelChart) {
+    funnelChart.selected_statuses = event.statuses
+  }
+}
 </script>

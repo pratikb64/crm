@@ -89,8 +89,6 @@ const props = defineProps({
 
 const emit = defineEmits(['update:selectedStatuses'])
 
-// Generate color shades based on number of statuses
-// Base: hsl(242 83.7% 75.9%), varying only L up to max 90
 const colors = computed(() => {
   const count = chartConfig.value?.length || 5
   const h = 242

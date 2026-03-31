@@ -9,7 +9,8 @@
       :data="item.data"
       :selected-statuses="item.selected_statuses"
       @update:selected-statuses="
-        $emit('update:selected-statuses', { index: index, statuses: $event })
+        (event) =>
+          $emit('update:selected-statuses', { index: index, statuses: event })
       "
     />
     <DealsByStage
