@@ -8,28 +8,51 @@
         {{ __('Actual vs projected sales for the month') }}
       </div>
     </div>
-    <div class="text-xl font-bold text-gray-900 mb-2">
+    <div
+      v-if="isForecastingEnabled"
+      class="text-xl font-bold text-gray-900 mb-2"
+    >
       {{ formattedActual }} / {{ formattedProjected }}
     </div>
     <div class="relative grow w-full flex flex-col justify-center pb-6">
       <ECharts
-        v-if="chartOptions"
+        v-if="chartOptions && isForecastingEnabled"
         :options="chartOptions"
         class="w-full h-13"
       />
+      <EmptyState2
+        v-if="!isForecastingEnabled"
+        :title="__('Forecasting Disabled')"
+        :description="__('Enable it to see expected closures against targets')"
+      >
+        <template #action>
+          <Button variant="subtle" @click="openForecastingSettings">
+            {{ __('Enable') }}
+          </Button>
+        </template>
+      </EmptyState2>
     </div>
   </div>
 </template>
 
 <script setup>
-import { createResource, ECharts } from 'frappe-ui'
+import { createResource, ECharts, Button } from 'frappe-ui'
 import { computed, onMounted } from 'vue'
+import { getSettings } from '@/stores/settings'
+import { showSettings, activeSettingsPage } from '@/composables/settings'
+import EmptyState2 from '@/components/ListViews/EmptyState2.vue'
 
 const props = defineProps({
   data: {
     type: Object,
     required: false,
   },
+})
+
+const { settings } = getSettings()
+
+const isForecastingEnabled = computed(() => {
+  return Boolean(settings.value?.enable_forecasting) === true
 })
 
 const getExpectedClosureResource = createResource({
@@ -129,4 +152,9 @@ onMounted(() => {
     getExpectedClosureResource.fetch()
   }
 })
+
+function openForecastingSettings() {
+  activeSettingsPage.value = 'Forecasting'
+  showSettings.value = true
+}
 </script>
