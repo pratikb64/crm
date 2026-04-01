@@ -1,7 +1,7 @@
 <template>
   <div class="flex flex-col rounded-md p-4 grow w-full h-full overflow-hidden">
     <div class="flex flex-col gap-1 shrink-0 mb-4">
-      <div class="flex items-center justify-between">
+      <div class="flex items-start justify-between">
         <div class="flex flex-col gap-1">
           <div class="text-lg font-semibold text-ink-gray-8">
             {{ __('Funnel Conversion') }}
@@ -18,7 +18,7 @@
             placeholder="Select Statuses"
             @update:model-value="onStatusSelectionChange"
             :hide-search="false"
-            class="w-64"
+            class="w-48"
           >
             <template #target="{ togglePopover }">
               <button
@@ -90,7 +90,6 @@ const props = defineProps({
 })
 
 const dashboardData = inject('dashboardData')
-console.log('🚀 ~ dashboardData:', dashboardData)
 
 const colors = computed(() => {
   const count = chartConfig.value?.length || 5

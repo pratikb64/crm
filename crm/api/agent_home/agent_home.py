@@ -90,31 +90,136 @@ def get_upcoming_activities(activity_type: str = "leads"):
 		return {"activities": [], "total": 0, "min_priority": 0, "max_priority": 0}
 
 
+def _get_last_activity_date(doctype: str, name: str) -> datetime:
+	"""Get the most recent activity date for a document."""
+	# Check document modified date
+	modified = frappe.db.get_value(doctype, name, "modified")
+	last_activity = modified if modified else frappe.utils.now_datetime()
+
+	# Check comments
+	comment = frappe.db.get_all(
+		"Comment",
+		filters={"reference_doctype": doctype, "reference_name": name},
+		fields=["creation"],
+		order_by="creation desc",
+		limit=1,
+	)
+	if comment and comment[0].creation:
+		last_activity = max(last_activity, comment[0].creation)
+
+	# Check communications
+	communication = frappe.db.get_all(
+		"Communication",
+		filters={"reference_doctype": doctype, "reference_name": name},
+		fields=["communication_date"],
+		order_by="communication_date desc",
+		limit=1,
+	)
+	if communication and communication[0].communication_date:
+		last_activity = max(last_activity, communication[0].communication_date)
+
+	# Check call logs
+	call_log = frappe.db.get_all(
+		"CRM Call Log",
+		filters=[
+			["CRM Call Log", "reference_docname", "=", name],
+		],
+		fields=["creation"],
+		order_by="creation desc",
+		limit=1,
+	)
+	if call_log and call_log[0].creation:
+		last_activity = max(last_activity, call_log[0].creation)
+
+	# Check tasks
+	task = frappe.db.get_all(
+		"CRM Task",
+		filters={"reference_doctype": doctype, "reference_docname": name},
+		fields=["modified"],
+		order_by="modified desc",
+		limit=1,
+	)
+	if task and task[0].modified:
+		last_activity = max(last_activity, task[0].modified)
+
+	# Check notes
+	note = frappe.db.get_all(
+		"FCRM Note",
+		filters={"reference_doctype": doctype, "reference_docname": name},
+		fields=["modified"],
+		order_by="modified desc",
+		limit=1,
+	)
+	if note and note[0].modified:
+		last_activity = max(last_activity, note[0].modified)
+
+	return last_activity
+
+
+def _format_time_ago(dt):
+	"""Return a human-readable 'X ago' string for time since last activity."""
+	if not dt:
+		return "unknown"
+	now = frappe.utils.now_datetime()
+	if isinstance(dt, str):
+		dt = frappe.utils.get_datetime(dt)
+	if isinstance(dt, date) and not isinstance(dt, datetime):
+		dt = frappe.utils.get_datetime(dt)
+	diff = now - dt
+	seconds = int(diff.total_seconds())
+	if seconds < 60:
+		return f"{seconds}s ago"
+	elif seconds < 3600:
+		return f"{seconds // 60}m ago"
+	elif seconds < 86400:
+		return f"{seconds // 3600}h ago"
+	elif seconds < 2592000:  # 30 days
+		return f"{seconds // 86400}d ago"
+	elif seconds < 31536000:  # 365 days
+		return f"{seconds // 2592000}mo ago"
+	else:
+		return f"{seconds // 31536000}y ago"
+
+
 def _get_upcoming_leads(user, limit):
 	Lead = DocType("CRM Lead")
 
 	base_query = frappe.qb.from_(Lead).where(Lead.lead_owner == user).where(Lead.converted == 0)
 
-	leads = (
-		base_query.select(
-			Lead.name,
-			Lead.lead_name.as_("subject"),
-			Lead.status,
-			Lead.source.as_("agent_group"),
-			Lead.annual_revenue.as_("priority"),
-			Lead.annual_revenue.as_("priority_integer_value"),
-			Lead.response_by,
-		)
-		.limit(limit)
-		.run(as_dict=True)
-	)
+	leads = base_query.select(
+		Lead.name,
+		Lead.lead_name.as_("subject"),
+		Lead.status,
+		Lead.source.as_("agent_group"),
+		Lead.annual_revenue.as_("priority"),
+		Lead.annual_revenue.as_("priority_integer_value"),
+		Lead.response_by,
+		Lead.modified,
+		Lead.organization,
+		Lead.first_name,
+		Lead.last_name,
+	).run(as_dict=True)
 
+	# Get last activity date for each lead and sort
 	for lead in leads:
-		time_until = _format_time_until(lead.get("response_by"))
+		last_activity = _get_last_activity_date("CRM Lead", lead.name)
+		lead["last_activity_date"] = last_activity
+		time_ago = _format_time_ago(last_activity)
 		lead["reason"] = {
 			"type": "leads",
-			"text": f"Response due in {time_until}" if time_until != "overdue" else "Response overdue",
+			"text": f"Last activity {time_ago}",
 		}
+		# Set account_name as organization or first + last name
+		if lead.get("organization"):
+			lead["account_name"] = lead.get("organization")
+		else:
+			first_name = lead.get("first_name") or ""
+			last_name = lead.get("last_name") or ""
+			lead["account_name"] = f"{first_name} {last_name}".strip() or ""
+
+	# Sort by last_activity_date (oldest first = longest time since activity)
+	leads.sort(key=lambda x: x["last_activity_date"])
+	leads = leads[:limit]
 
 	min_priority, max_priority = get_priority_range()
 	return {
@@ -129,50 +234,43 @@ def _get_upcoming_deals(user, limit):
 	Deal = DocType("CRM Deal")
 	CRMDealStatus = DocType("CRM Deal Status")
 
-	sla_due = Deal.response_by.isnotnull() & Deal.sla_status.isin(["First Response Due", "Resolution Due"])
-	closure_soon = Deal.expected_closure_date.isnotnull() & (
-		Deal.expected_closure_date >= frappe.utils.nowdate()
-	)
-
 	base_query = (
 		frappe.qb.from_(Deal)
 		.join(CRMDealStatus)
 		.on(Deal.status == CRMDealStatus.name)
 		.where(Deal.deal_owner == user)
 		.where(CRMDealStatus.type.notin(["Lost", "Won"]))
-		.where(sla_due | closure_soon)
 	)
 
-	deals = (
-		base_query.select(
-			Deal.name,
-			Deal.organization.as_("subject"),
-			CRMDealStatus.deal_status.as_("status"),
-			Deal.source.as_("agent_group"),
-			Deal.expected_deal_value.as_("priority"),
-			Deal.expected_deal_value.as_("priority_integer_value"),
-			Deal.response_by,
-			Deal.sla_status,
-			Deal.expected_closure_date,
-		)
-		.orderby(Deal.response_by)
-		.limit(limit)
-		.run(as_dict=True)
-	)
+	deals = base_query.select(
+		Deal.name,
+		Deal.organization.as_("subject"),
+		CRMDealStatus.deal_status.as_("status"),
+		Deal.source.as_("agent_group"),
+		Deal.expected_deal_value.as_("priority"),
+		Deal.expected_deal_value.as_("priority_integer_value"),
+		Deal.response_by,
+		Deal.sla_status,
+		Deal.expected_closure_date,
+		Deal.modified,
+		Deal.organization,
+	).run(as_dict=True)
 
+	# Get last activity date for each deal and sort
 	for deal in deals:
-		if deal.get("response_by") and deal.get("sla_status") in ["First Response Due", "Resolution Due"]:
-			time_until = _format_time_until(deal.get("response_by"))
-			deal["reason"] = {
-				"type": "deals",
-				"text": f"Response due in {time_until}" if time_until != "overdue" else "Response overdue",
-			}
-		elif deal.get("expected_closure_date"):
-			time_until = _format_time_until(deal.get("expected_closure_date"))
-			deal["reason"] = {
-				"type": "deals",
-				"text": f"Closing in {time_until}" if time_until != "overdue" else "Closure overdue",
-			}
+		last_activity = _get_last_activity_date("CRM Deal", deal.name)
+		deal["last_activity_date"] = last_activity
+		time_ago = _format_time_ago(last_activity)
+		deal["reason"] = {
+			"type": "deals",
+			"text": f"Last activity {time_ago}",
+		}
+		# Set account_name as organization
+		deal["account_name"] = deal.get("organization") or ""
+
+	# Sort by last_activity_date (oldest first = longest time since activity)
+	deals.sort(key=lambda x: x["last_activity_date"])
+	deals = deals[:limit]
 
 	min_priority, max_priority = get_deal_priority_range()
 	return {
@@ -222,6 +320,8 @@ def _get_upcoming_tasks(user, limit):
 			"type": "tasks",
 			"text": f"Due in {time_until}" if time_until != "overdue" else "Task overdue",
 		}
+		# Set account_name as parent doc (reference_docname)
+		task["account_name"] = task.get("reference_docname") or ""
 
 	return {
 		"activities": tasks,

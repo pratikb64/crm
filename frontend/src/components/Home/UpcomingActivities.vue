@@ -26,6 +26,9 @@
             <th class="p-2 text-left font-normal min-w-32 whitespace-nowrap">
               {{ __('Status') }}
             </th>
+            <th class="p-2 text-left font-normal min-w-32 whitespace-nowrap">
+              {{ __('Related To') }}
+            </th>
           </tr>
         </thead>
         <tbody v-if="chartConfig?.activities?.length > 0" class="grow">
@@ -47,6 +50,9 @@
                 :theme="getPriorityBadgeColor(activity.priority_integer_value)"
               />
             </td>
+            <td class="p-2 py-3 min-w-32 truncate max-w-32">
+              {{ activity.account_name }}
+            </td>
           </tr>
         </tbody>
         <tbody class="relative" v-else>
@@ -57,6 +63,9 @@
           >
             <td class="p-2 py-3 w-full max-w-0">
               <div class="h-4 w-full bg-surface-gray-1 rounded-sm max-w-full" />
+            </td>
+            <td class="p-2 py-3 min-w-32">
+              <div class="h-4 w-full bg-surface-gray-1 rounded-sm" />
             </td>
             <td class="p-2 py-3 min-w-24">
               <div class="h-4 w-full bg-surface-gray-1 rounded-sm" />
@@ -240,7 +249,7 @@ const goToActivity = (activity) => {
   const routeMap = {
     leads: { name: 'Lead', params: { leadId: activity.name } },
     deals: { name: 'Deal', params: { dealId: activity.name } },
-    tasks: { name: 'Task', params: { taskId: activity.name } },
+    tasks: { name: 'Tasks', query: { open: activity.name } },
   }
 
   const route = routeMap[currentTab.value]
