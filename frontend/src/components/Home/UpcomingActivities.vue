@@ -15,7 +15,7 @@
     </div>
     <div class="flex flex-col mt-5 grow overflow-auto hide-scrollbar">
       <table class="w-full table-auto">
-        <thead v-if="chartConfig?.leads?.length > 0">
+        <thead v-if="chartConfig?.activities?.length > 0">
           <tr class="text-sm text-gray-600">
             <th class="p-2 text-left font-normal w-full">
               {{ __('Activity') }}
@@ -34,47 +34,47 @@
             </th>
           </tr>
         </thead>
-        <tbody v-if="chartConfig?.leads?.length > 0" class="grow">
+        <tbody v-if="chartConfig?.activities?.length > 0" class="grow">
           <tr
-            v-for="lead in chartConfig?.leads"
-            :key="lead.name"
-            @click="goToLead(lead)"
+            v-for="activity in chartConfig?.activities"
+            :key="activity.name"
+            @click="goToActivity(activity)"
             class="text-sm cursor-pointer hover:bg-gray-50 border-t border-outline-gray-1"
           >
             <td class="p-2 py-3 w-full max-w-0 truncate">
-              {{ lead.subject }}
+              {{ activity.subject }}
             </td>
             <td class="p-2 py-3 min-w-20 truncate max-w-20">
-              {{ lead.status }}
+              {{ activity.status }}
             </td>
             <td class="p-2 py-3 min-w-20 truncate max-w-20">
               <Badge
-                :label="lead.priority"
-                :theme="getPriorityBadgeColor(lead.priority_integer_value)"
+                :label="activity.priority"
+                :theme="getPriorityBadgeColor(activity.priority_integer_value)"
               />
             </td>
             <td class="p-2 py-3 w-36 truncate max-w-36">
-              {{ lead.agent_group || __('Not Assigned') }}
+              {{ activity.agent_group || __('Not Assigned') }}
             </td>
             <td class="p-2 py-3 min-w-40">
               <div
-                v-if="lead.reason"
+                v-if="activity.reason"
                 class="flex items-center gap-1 text-ink-gray-7 truncate w-full"
-                :class="getReasonColorClass(lead.reason)"
+                :class="getReasonColorClass(activity.reason)"
               >
                 <TimerIcon
-                  v-if="lead.reason.type === 'leads'"
+                  v-if="activity.reason.type === 'leads'"
                   class="size-4 flex-shrink-0"
                 />
                 <TicketPlusIcon
-                  v-else-if="lead.reason.type === 'new_leads'"
+                  v-else-if="activity.reason.type === 'deals'"
                   class="size-4 flex-shrink-0"
                 />
-                <CalendarIcon
-                  v-else-if="lead.reason.type === 'pending'"
+                <CheckCircleIcon
+                  v-else-if="activity.reason.type === 'tasks'"
                   class="size-4 flex-shrink-0"
                 />
-                <span class="truncate">{{ lead.reason.text }}</span>
+                <span class="truncate">{{ activity.reason.text }}</span>
               </div>
               <span
                 v-else
@@ -91,23 +91,23 @@
             :class="i > 1 ? 'border-t border-outline-gray-1' : ''"
           >
             <td class="p-2 py-3 w-full max-w-0">
-              <div class="h-4 w-full bg-surface-gray-1 max-w-full" />
+              <div class="h-4 w-full bg-surface-gray-1 rounded-sm max-w-full" />
             </td>
             <td class="p-2 py-3 min-w-14">
-              <div class="h-4 w-full bg-surface-gray-1" />
+              <div class="h-4 w-full bg-surface-gray-1 rounded-sm" />
             </td>
             <td class="p-2 py-3 min-w-21">
-              <div class="h-4 w-full bg-surface-gray-1" />
+              <div class="h-4 w-full bg-surface-gray-1 rounded-sm" />
             </td>
             <td class="p-2 py-3 min-w-28">
-              <div class="h-4 w-full bg-surface-gray-1" />
+              <div class="h-4 w-full bg-surface-gray-1 rounded-sm" />
             </td>
             <td class="p-2 py-3 min-w-40">
-              <div class="h-4 w-full bg-surface-gray-1" />
+              <div class="h-4 w-full bg-surface-gray-1 rounded-sm" />
             </td>
           </tr>
           <EmptyState2
-            v-if="chartConfig?.leads?.length === 0"
+            v-if="chartConfig?.activities?.length === 0"
             :title="emptyStateText.title"
             :description="emptyStateText.description"
           />
@@ -118,20 +118,22 @@
       >
         <div>
           <div
-            v-if="chartConfig?.totalPendingLeads > 6"
+            v-if="chartConfig?.total > 6"
             class="p-2 flex items-center gap-1 text-base text-ink-gray-5 cursor-pointer hover:text-ink-gray-7 w-max select-none mt-3"
-            @click="redirectToSeeAllLeads"
+            @click="redirectToSeeAll"
           >
-            {{ __('See all {0} leads', chartConfig?.totalPendingLeads + '') }}
+            {{ __('See all {0}', [chartConfig?.total + ' ' + currentTab]) }}
             <FeatherIcon name="arrow-right" class="size-4" />
           </div>
         </div>
-        <div v-if="chartConfig?.leads?.length > 0" class="mt-3 mb-0.5">
+        <div v-if="chartConfig?.activities?.length > 0" class="mt-3 mb-0.5">
           {{
             __('Showing {0} of {1} {2}', [
-              chartConfig?.leads?.length || 0 + '',
-              chartConfig?.totalPendingLeads || 0 + '',
-              chartConfig?.leads?.length > 1 ? 'leads' : 'lead',
+              chartConfig?.activities?.length || 0 + '',
+              chartConfig?.total || 0 + '',
+              chartConfig?.activities?.length > 1
+                ? currentTab
+                : currentTab.replace(/s$/, ''),
             ])
           }}
         </div>
@@ -152,7 +154,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import TimerIcon from '~icons/lucide/timer'
 import TicketPlusIcon from '~icons/lucide/ticket-plus'
-import CalendarIcon from '~icons/lucide/calendar'
+import CheckCircleIcon from '~icons/lucide/check-circle'
 import EmptyState2 from '../ListViews/EmptyState2.vue'
 
 const router = useRouter()
@@ -171,20 +173,20 @@ const chartTabs = [
     value: 'leads',
   },
   {
-    label: 'Tasks',
-    value: 'tasks',
+    label: 'Deals',
+    value: 'deals',
   },
   {
-    label: 'Meetings',
-    value: 'meetings',
+    label: 'Tasks',
+    value: 'tasks',
   },
 ]
 
 const title = computed(() => {
   const labels = {
     leads: __('Leads'),
+    deals: __('Deals'),
     tasks: __('Tasks'),
-    meetings: __('Meetings'),
   }
   return labels[currentTab.value] || __('Leads')
 })
@@ -192,8 +194,8 @@ const title = computed(() => {
 const tooltipText = computed(() => {
   const texts = {
     leads: __('Leads where SLA response is due soon'),
+    deals: __('Deals where SLA response is due soon'),
     tasks: __('Tasks which are due soon'),
-    meetings: __('Meetings that are due soon'),
   }
   return texts[currentTab.value]
 })
@@ -201,13 +203,13 @@ const tooltipText = computed(() => {
 const emptyStateText = computed(() => {
   const titles = {
     leads: __('No leads'),
+    deals: __('No deals'),
     tasks: __('No tasks'),
-    meetings: __('No meetings'),
   }
   const descriptions = {
     leads: __('All leads are resolved or converted to deals'),
+    deals: __('All deals are resolved or converted to deals'),
     tasks: __('All tasks are completed'),
-    meetings: __('You have no meetings scheduled'),
   }
   return {
     title: titles[currentTab.value],
@@ -219,26 +221,28 @@ const chartConfig = computed(() => {
   const _data = getUpcomingActivitiesResource.fetched
     ? getUpcomingActivitiesResource.data
     : props.data
+
   const maxPriority = _data?.max_priority ?? 0
   const minPriority = _data?.min_priority ?? 0
-  const leads = _data?.leads ?? []
-  const totalPendingLeads = _data?.total_pending_leads ?? 0
+  // Support both old format (leads/total_pending_leads) and new format (activities/total)
+  const activities = _data?.activities || _data?.leads || []
+  const total = _data?.total ?? _data?.total_pending_leads ?? 0
 
   return {
-    leads,
+    activities,
     maxPriority,
     minPriority,
-    totalPendingLeads,
+    total,
   }
 })
 
 const getUpcomingActivitiesResource = createResource({
   url: 'crm.api.agent_home.agent_home.get_upcoming_activities',
-  params: { ticket_type: currentTab.value },
+  params: { activity_type: currentTab.value },
 })
 
 watch(currentTab, (newTab) => {
-  getUpcomingActivitiesResource.params = { ticket_type: newTab }
+  getUpcomingActivitiesResource.params = { activity_type: newTab }
   getUpcomingActivitiesResource.fetch()
 })
 
@@ -273,14 +277,28 @@ function getReasonColorClass(reason) {
   return ''
 }
 
-const goToLead = (lead) => {
-  if (lead.name) {
-    router.push({ name: 'Lead', params: { leadId: lead.name } })
+const goToActivity = (activity) => {
+  if (!activity.name) return
+
+  const routeMap = {
+    leads: { name: 'Lead', params: { leadId: activity.name } },
+    deals: { name: 'Deal', params: { dealId: activity.name } },
+    tasks: { name: 'Task', params: { taskId: activity.name } },
+  }
+
+  const route = routeMap[currentTab.value]
+  if (route) {
+    router.push(route)
   }
 }
 
-const redirectToSeeAllLeads = () => {
-  router.push({ name: 'Leads' })
+const redirectToSeeAll = () => {
+  const routeMap = {
+    leads: 'Leads',
+    deals: 'Deals',
+    tasks: 'Tasks',
+  }
+  router.push({ name: routeMap[currentTab.value] || 'Leads' })
 }
 
 onMounted(() => {

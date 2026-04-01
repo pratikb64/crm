@@ -39,6 +39,23 @@ def _get_priority_range():
 	return 0, 0
 
 
+def _get_deal_priority_range():
+	CRMDeal = DocType("CRM Deal")
+	result = (
+		frappe.qb.from_(CRMDeal)
+		.select(
+			CRMDeal.expected_deal_value,
+		)
+		.where(CRMDeal.expected_deal_value.isnotnull())
+		.run(as_dict=True)
+	)
+	if result:
+		values = [r["expected_deal_value"] for r in result if r["expected_deal_value"]]
+		if values:
+			return min(values), max(values)
+	return 0, 0
+
+
 def _format_time_ago(dt):
 	"""Return a human-readable 'X ago' string for a datetime."""
 	if not dt:
@@ -118,140 +135,210 @@ def get_dashboard(reset_layout: bool = False):
 
 
 @frappe.whitelist()
-def get_upcoming_activities(ticket_type: str = "upcoming_sla"):
+def get_upcoming_activities(activity_type: str = "leads"):
 	user = frappe.session.user
-	Lead = DocType("CRM Lead")
 	limit = 6
 
-	if ticket_type == "upcoming_sla":
-		# Leads with an upcoming SLA response deadline
-		leads = (
-			frappe.qb.from_(Lead)
-			.select(
-				Lead.name,
-				Lead.lead_name.as_("subject"),
-				Lead.status,
-				Lead.source.as_("agent_group"),
-				Lead.annual_revenue.as_("priority"),
-				Lead.annual_revenue.as_("priority_integer_value"),
-				Lead.response_by,
-				Lead.sla_status,
-			)
-			.where(Lead.lead_owner == user)
-			.where(Lead.converted == 0)
-			.where(Lead.response_by.isnotnull())
-			.where(Lead.sla_status.isin(["First Response Due", "Resolution Due"]))
-			.orderby(Lead.response_by)
-			.limit(limit)
-			.run(as_dict=True)
-		)
-
-		for lead in leads:
-			due_time = lead.get("response_by")
-			time_until = _format_time_until(due_time)
-			lead["reason"] = {
-				"type": "upcoming_sla",
-				"text": f"Response due in {time_until}" if time_until != "overdue" else "Response overdue",
-			}
-
-		# Count for "see all"
-		total_count = (
-			frappe.qb.from_(Lead)
-			.select(Count(Lead.name).as_("cnt"))
-			.where(Lead.lead_owner == user)
-			.where(Lead.converted == 0)
-			.where(Lead.response_by.isnotnull())
-			.where(Lead.sla_status.isin(["First Response Due", "Resolution Due"]))
-			.run(as_dict=True)
-		)
-		total = total_count[0]["cnt"] if total_count else 0
-
-	elif ticket_type == "new_leads":
-		# Leads assigned to current user in the last 24 hours
-		one_day_ago = frappe.utils.add_to_date(frappe.utils.now_datetime(), hours=-24)
-		leads = (
-			frappe.qb.from_(Lead)
-			.select(
-				Lead.name,
-				Lead.lead_name.as_("subject"),
-				Lead.status,
-				Lead.source.as_("agent_group"),
-				Lead.annual_revenue.as_("priority"),
-				Lead.annual_revenue.as_("priority_integer_value"),
-				Lead.creation,
-			)
-			.where(Lead.lead_owner == user)
-			.where(Lead.converted == 0)
-			.where(Lead.creation >= one_day_ago)
-			.orderby(Lead.creation, order=frappe.qb.desc)
-			.limit(limit)
-			.run(as_dict=True)
-		)
-
-		for lead in leads:
-			lead["reason"] = {
-				"type": "new_leads",
-				"text": "Recently assigned",
-			}
-
-		total_count = (
-			frappe.qb.from_(Lead)
-			.select(Count(Lead.name).as_("cnt"))
-			.where(Lead.lead_owner == user)
-			.where(Lead.converted == 0)
-			.where(Lead.creation >= one_day_ago)
-			.run(as_dict=True)
-		)
-		total = total_count[0]["cnt"] if total_count else 0
-
-	elif ticket_type == "pending":
-		# Leads the user owns that have not been responded to (first_responded_on is null)
-		leads = (
-			frappe.qb.from_(Lead)
-			.select(
-				Lead.name,
-				Lead.lead_name.as_("subject"),
-				Lead.status,
-				Lead.source.as_("agent_group"),
-				Lead.annual_revenue.as_("priority"),
-				Lead.annual_revenue.as_("priority_integer_value"),
-				Lead.creation,
-				Lead.communication_status,
-			)
-			.where(Lead.lead_owner == user)
-			.where(Lead.converted == 0)
-			.where(Lead.first_responded_on.isnull())
-			.orderby(Lead.creation)
-			.limit(limit)
-			.run(as_dict=True)
-		)
-
-		for lead in leads:
-			time_ago = _format_time_ago(lead.get("creation"))
-			lead["reason"] = {
-				"type": "pending",
-				"text": f"Pending for {time_ago}",
-			}
-
-		total_count = (
-			frappe.qb.from_(Lead)
-			.select(Count(Lead.name).as_("cnt"))
-			.where(Lead.lead_owner == user)
-			.where(Lead.converted == 0)
-			.where(Lead.first_responded_on.isnull())
-			.run(as_dict=True)
-		)
-		total = total_count[0]["cnt"] if total_count else 0
-
+	if activity_type == "leads":
+		return _get_upcoming_leads(user, limit)
+	elif activity_type == "deals":
+		return _get_upcoming_deals(user, limit)
+	elif activity_type == "tasks":
+		return _get_upcoming_tasks(user, limit)
 	else:
-		leads = []
-		total = 0
+		return {"activities": [], "total": 0, "min_priority": 0, "max_priority": 0}
 
+
+def _get_upcoming_leads(user, limit):
+	Lead = DocType("CRM Lead")
+	# Leads with an upcoming SLA response deadline
+	leads = (
+		frappe.qb.from_(Lead)
+		.select(
+			Lead.name,
+			Lead.lead_name.as_("subject"),
+			Lead.status,
+			Lead.source.as_("agent_group"),
+			Lead.annual_revenue.as_("priority"),
+			Lead.annual_revenue.as_("priority_integer_value"),
+			Lead.response_by,
+			Lead.sla_status,
+		)
+		.where(Lead.lead_owner == user)
+		.where(Lead.converted == 0)
+		.where(Lead.response_by.isnotnull())
+		.where(Lead.sla_status.isin(["First Response Due", "Resolution Due"]))
+		.orderby(Lead.response_by)
+		.limit(limit)
+		.run(as_dict=True)
+	)
+
+	for lead in leads:
+		due_time = lead.get("response_by")
+		time_until = _format_time_until(due_time)
+		lead["reason"] = {
+			"type": "leads",
+			"text": f"Response due in {time_until}" if time_until != "overdue" else "Response overdue",
+		}
+
+	# Count for "see all"
+	total_count = (
+		frappe.qb.from_(Lead)
+		.select(Count(Lead.name).as_("cnt"))
+		.where(Lead.lead_owner == user)
+		.where(Lead.converted == 0)
+		.where(Lead.response_by.isnotnull())
+		.where(Lead.sla_status.isin(["First Response Due", "Resolution Due"]))
+		.run(as_dict=True)
+	)
+	total = total_count[0]["cnt"] if total_count else 0
 	min_priority, max_priority = _get_priority_range()
 
 	return {
-		"leads": leads,
-		"total_pending_leads": total,
+		"activities": leads,
+		"total": total,
+		"min_priority": min_priority,
+		"max_priority": max_priority,
+	}
+
+
+def _get_upcoming_deals(user, limit):
+	Deal = DocType("CRM Deal")
+	CRMDealStatus = DocType("CRM Deal Status")
+
+	# Deals with SLA response due or expected closure in near future
+	deals = (
+		frappe.qb.from_(Deal)
+		.join(CRMDealStatus)
+		.on(Deal.status == CRMDealStatus.name)
+		.select(
+			Deal.name,
+			Deal.organization.as_("subject"),
+			CRMDealStatus.deal_status.as_("status"),
+			Deal.source.as_("agent_group"),
+			Deal.expected_deal_value.as_("priority"),
+			Deal.expected_deal_value.as_("priority_integer_value"),
+			Deal.response_by,
+			Deal.sla_status,
+			Deal.expected_closure_date,
+		)
+		.where(Deal.deal_owner == user)
+		.where(CRMDealStatus.type.notin(["Lost", "Won"]))
+		.where(
+			(Deal.response_by.isnotnull() & Deal.sla_status.isin(["First Response Due", "Resolution Due"]))
+			| (
+				Deal.expected_closure_date.isnotnull()
+				& (Deal.expected_closure_date >= frappe.utils.nowdate())
+			)
+		)
+		.orderby(Deal.response_by)
+		.limit(limit)
+		.run(as_dict=True)
+	)
+
+	for deal in deals:
+		if deal.get("response_by") and deal.get("sla_status") in ["First Response Due", "Resolution Due"]:
+			due_time = deal.get("response_by")
+			time_until = _format_time_until(due_time)
+			deal["reason"] = {
+				"type": "deals",
+				"text": f"Response due in {time_until}" if time_until != "overdue" else "Response overdue",
+			}
+		elif deal.get("expected_closure_date"):
+			due_time = deal.get("expected_closure_date")
+			time_until = _format_time_until(due_time)
+			deal["reason"] = {
+				"type": "deals",
+				"text": f"Closing in {time_until}" if time_until != "overdue" else "Closure overdue",
+			}
+
+	# Count for "see all"
+	total_count = (
+		frappe.qb.from_(Deal)
+		.join(CRMDealStatus)
+		.on(Deal.status == CRMDealStatus.name)
+		.select(Count(Deal.name).as_("cnt"))
+		.where(Deal.deal_owner == user)
+		.where(CRMDealStatus.type.notin(["Lost", "Won"]))
+		.where(
+			(Deal.response_by.isnotnull() & Deal.sla_status.isin(["First Response Due", "Resolution Due"]))
+			| (
+				Deal.expected_closure_date.isnotnull()
+				& (Deal.expected_closure_date >= frappe.utils.nowdate())
+			)
+		)
+		.run(as_dict=True)
+	)
+	total = total_count[0]["cnt"] if total_count else 0
+	min_priority, max_priority = _get_deal_priority_range()
+
+	return {
+		"activities": deals,
+		"total": total,
+		"min_priority": min_priority,
+		"max_priority": max_priority,
+	}
+
+
+def _get_upcoming_tasks(user, limit):
+	Task = DocType("CRM Task")
+
+	# Tasks assigned to user that are not done/canceled and have due date
+	tasks = (
+		frappe.qb.from_(Task)
+		.select(
+			Task.name,
+			Task.title.as_("subject"),
+			Task.status,
+			Task.priority.as_("agent_group"),
+			Task.priority.as_("priority"),
+			Task._idx.as_("priority_integer_value"),
+			Task.due_date.as_("response_by"),
+			Task.reference_doctype,
+			Task.reference_docname,
+		)
+		.where(Task.assigned_to == user)
+		.where(Task.status.notin(["Done", "Canceled"]))
+		.where(Task.due_date.isnotnull())
+		.where(Task.due_date >= frappe.utils.add_to_date(frappe.utils.now_datetime(), days=-1))
+		.orderby(Task.due_date)
+		.limit(limit)
+		.run(as_dict=True)
+	)
+
+	priority_map = {"Low": 1, "Medium": 2, "High": 3}
+	for task in tasks:
+		task["priority_integer_value"] = priority_map.get(task.get("priority"), 0)
+		due_time = task.get("response_by")
+		time_until = _format_time_until(due_time)
+		task["reason"] = {
+			"type": "tasks",
+			"text": f"Due in {time_until}" if time_until != "overdue" else "Task overdue",
+		}
+		# Add reference info
+		if task.get("reference_doctype") and task.get("reference_docname"):
+			task["agent_group"] = f"{task['reference_doctype']}: {task['reference_docname']}"
+
+	# Count for "see all"
+	total_count = (
+		frappe.qb.from_(Task)
+		.select(Count(Task.name).as_("cnt"))
+		.where(Task.assigned_to == user)
+		.where(Task.status.notin(["Done", "Canceled"]))
+		.where(Task.due_date.isnotnull())
+		.where(Task.due_date >= frappe.utils.add_to_date(frappe.utils.now_datetime(), days=-1))
+		.run(as_dict=True)
+	)
+	total = total_count[0]["cnt"] if total_count else 0
+
+	# Calculate priority range for tasks
+	all_priorities = [priority_map.get(t.get("priority"), 0) for t in tasks if t.get("priority")]
+	min_priority = min(all_priorities) if all_priorities else 0
+	max_priority = max(all_priorities) if all_priorities else 0
+
+	return {
+		"activities": tasks,
+		"total": total,
 		"min_priority": min_priority,
 		"max_priority": max_priority,
 	}
