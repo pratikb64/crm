@@ -38,6 +38,7 @@ import { getSettings } from '@/stores/settings'
 import { showSettings, activeSettingsPage } from '@/composables/settings'
 import { formatCurrency } from '@/utils/numberFormat'
 import EmptyState2 from '@/components/ListViews/EmptyState2.vue'
+import { useChartTheme } from '@/composables/useChartTheme.js'
 
 const props = defineProps({
   data: {
@@ -47,6 +48,7 @@ const props = defineProps({
 })
 
 const { settings } = getSettings()
+const { chartColors } = useChartTheme()
 
 const isForecastingEnabled = computed(() => {
   return Boolean(settings.value?.enable_forecasting) === true
@@ -72,23 +74,24 @@ const chartOptions = computed(() => {
   const categories = chartConfig.value.categories
   const forecast = chartConfig.value.forecast
   const actual = chartConfig.value.actual
+  const colors = chartColors.value
 
   return {
     grid: {
       left: 10,
       right: 15,
       top: 10,
-      bottom: 30, // Space for legend and x-axis
+      bottom: 30,
       containLabel: true,
     },
     tooltip: {
       trigger: 'axis',
-      backgroundColor: '#fff',
-      borderColor: '#E5E7EB',
+      backgroundColor: colors.tooltip.backgroundColor,
+      borderColor: colors.tooltip.borderColor,
       borderWidth: 1,
       padding: [8, 12],
       textStyle: {
-        color: '#111827',
+        color: colors.tooltip.textColor,
         fontSize: 13,
       },
       extraCssText:
@@ -104,7 +107,7 @@ const chartOptions = computed(() => {
       icon: 'circle',
       itemGap: 24,
       textStyle: {
-        color: '#374151',
+        color: colors.legend.text,
         fontSize: 14,
         fontWeight: 400,
       },
@@ -116,7 +119,7 @@ const chartOptions = computed(() => {
       axisLine: { show: false },
       axisTick: { show: false },
       axisLabel: {
-        color: '#6B7280',
+        color: colors.axis.label,
         fontSize: 12,
         margin: 12,
         formatter: (value) => (value === '' ? '' : value),
@@ -130,11 +133,11 @@ const chartOptions = computed(() => {
       splitLine: {
         lineStyle: {
           type: 'dashed',
-          color: '#E5E7EB',
+          color: colors.axis.splitLine,
         },
       },
       axisLabel: {
-        color: '#6B7280',
+        color: colors.axis.label,
         fontSize: 12,
         formatter: (value) => {
           if (value === 0) return formatCurrency(0)

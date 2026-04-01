@@ -54,6 +54,7 @@ import { createResource, ECharts } from 'frappe-ui'
 import { computed, onMounted, ref } from 'vue'
 import EmptyState2 from '../ListViews/EmptyState2.vue'
 import { formatCurrency } from '../../utils/numberFormat.js'
+import { useChartTheme } from '@/composables/useChartTheme.js'
 
 const props = defineProps({
   data: {
@@ -61,6 +62,8 @@ const props = defineProps({
     required: false,
   },
 })
+
+const { chartColors } = useChartTheme()
 
 const colors = ['#4AB1ED', '#8157ED', '#4363F3', '#DD56D8']
 
@@ -79,6 +82,8 @@ const chartConfig = computed(() => {
 
 const chartOptions = computed(() => {
   if (!chartConfig.value?.length) return null
+
+  const themeColors = chartColors.value
 
   return {
     grid: {
@@ -105,12 +110,12 @@ const chartOptions = computed(() => {
       formatter: (params) => {
         return `${params.seriesName}: ${formatCurrency(params.value)}`
       },
-      backgroundColor: '#fff',
-      borderColor: '#E5E7EB',
+      backgroundColor: themeColors.tooltip.backgroundColor,
+      borderColor: themeColors.tooltip.borderColor,
       borderWidth: 1,
       padding: [8, 12],
       textStyle: {
-        color: '#111827',
+        color: themeColors.tooltip.textColor,
         fontSize: 13,
       },
       extraCssText:
@@ -134,7 +139,7 @@ const chartOptions = computed(() => {
             isLast ? 6 : 0,
             isFirst ? 6 : 0,
           ],
-          borderColor: '#ffffff',
+          borderColor: themeColors.border.bar,
           borderWidth: 2,
         },
         data: [displayValue],

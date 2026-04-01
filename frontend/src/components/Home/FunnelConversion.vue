@@ -76,6 +76,8 @@ import { createResource, ECharts, MultiSelect } from 'frappe-ui'
 import { computed, inject, onMounted, ref, nextTick } from 'vue'
 import EmptyState2 from '../ListViews/EmptyState2.vue'
 
+import { useChartTheme } from '@/composables/useChartTheme.js'
+
 const props = defineProps({
   data: {
     type: Array,
@@ -166,12 +168,15 @@ const fetchFunnelConversionData = () => {
   }
 }
 
+const { chartColors } = useChartTheme()
+
 const chartOptions = computed(() => {
   if (!chartConfig.value?.length) return null
 
   const dataValues = chartConfig.value.map((item) => item.value)
   const categories = chartConfig.value.map((item) => item.label)
   const maxValue = Math.max(...dataValues) * 1.1 || 1
+  const themeColors = chartColors.value
 
   return {
     grid: {
@@ -186,12 +191,12 @@ const chartOptions = computed(() => {
       formatter: (params) => {
         return `${params.name}: ${params.value}`
       },
-      backgroundColor: '#fff',
-      borderColor: '#E5E7EB',
+      backgroundColor: themeColors.tooltip.backgroundColor,
+      borderColor: themeColors.tooltip.borderColor,
       borderWidth: 1,
       padding: [8, 12],
       textStyle: {
-        color: '#111827',
+        color: themeColors.tooltip.textColor,
         fontSize: 13,
       },
       extraCssText:
@@ -270,7 +275,7 @@ const chartOptions = computed(() => {
                 y: 8,
                 style: {
                   text: val.toString(),
-                  fill: '#111827',
+                  fill: themeColors.text.primary,
                   fontSize: 20,
                   fontWeight: 500,
                   textVerticalAlign: 'top',
@@ -284,7 +289,7 @@ const chartOptions = computed(() => {
                 y: 36,
                 style: {
                   text: categories[params.dataIndex] || '',
-                  fill: '#6b7280',
+                  fill: themeColors.text.secondary,
                   fontSize: 13,
                   textVerticalAlign: 'top',
                   width: width - 32,
@@ -302,7 +307,7 @@ const chartOptions = computed(() => {
                         y2: api.getHeight(),
                       },
                       style: {
-                        stroke: '#E5E7EB',
+                        stroke: themeColors.border.line,
                         lineWidth: 1,
                       },
                     },

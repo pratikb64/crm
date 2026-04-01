@@ -41,6 +41,7 @@ import { computed, onMounted } from 'vue'
 import { getSettings } from '@/stores/settings'
 import { showSettings, activeSettingsPage } from '@/composables/settings'
 import EmptyState2 from '@/components/ListViews/EmptyState2.vue'
+import { useChartTheme } from '@/composables/useChartTheme.js'
 
 const props = defineProps({
   data: {
@@ -50,6 +51,7 @@ const props = defineProps({
 })
 
 const { settings } = getSettings()
+const { chartColors } = useChartTheme()
 
 const isForecastingEnabled = computed(() => {
   return Boolean(settings.value?.enable_forecasting) === true
@@ -85,6 +87,7 @@ const chartOptions = computed(() => {
 
   const actual = chartConfig.value.actual
   const projected = chartConfig.value.projected
+  const colors = chartColors.value
 
   return {
     grid: {
@@ -110,7 +113,7 @@ const chartOptions = computed(() => {
         barWidth: 40,
         showBackground: true,
         backgroundStyle: {
-          color: '#F4F5F6',
+          color: colors.background.bar,
           borderRadius: [0, 4, 4, 0],
         },
         itemStyle: {
@@ -132,12 +135,12 @@ const chartOptions = computed(() => {
             type: 'line',
             shape: {
               x1: x,
-              y1: y - barHeight / 2 - 20, // slightly above
+              y1: y - barHeight / 2 - 20,
               x2: x,
-              y2: y + barHeight / 2 + 20, // extends below
+              y2: y + barHeight / 2 + 20,
             },
             style: {
-              stroke: '#374151',
+              stroke: colors.text.secondary,
               lineWidth: 1.5,
             },
           }
