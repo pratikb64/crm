@@ -20,17 +20,11 @@
             <th class="p-2 text-left font-normal w-full">
               {{ __('Activity') }}
             </th>
-            <th class="p-2 text-left font-normal min-w-20 whitespace-nowrap">
-              {{ __('Type') }}
-            </th>
-            <th class="p-2 text-left font-normal min-w-20 whitespace-nowrap">
+            <th class="p-2 text-left font-normal min-w-28 whitespace-nowrap">
               {{ __('Due') }}
             </th>
             <th class="p-2 text-left font-normal min-w-32 whitespace-nowrap">
-              {{ __('Related To') }}
-            </th>
-            <th class="p-2 text-left font-normal min-w-40 whitespace-nowrap">
-              {{ __('Account / Person') }}
+              {{ __('Status') }}
             </th>
           </tr>
         </thead>
@@ -39,48 +33,19 @@
             v-for="activity in chartConfig?.activities"
             :key="activity.name"
             @click="goToActivity(activity)"
-            class="text-sm cursor-pointer hover:bg-gray-50 border-t border-outline-gray-1"
+            class="text-sm cursor-pointer hover:bg-surface-gray-1 border-t border-outline-gray-1"
           >
             <td class="p-2 py-3 w-full max-w-0 truncate">
               {{ activity.subject }}
             </td>
-            <td class="p-2 py-3 min-w-20 truncate max-w-20">
-              {{ activity.status }}
+            <td class="p-2 py-3 min-w-24 truncate max-w-24">
+              {{ formatDate(activity.response_by, 'MMM D, YYYY') }}
             </td>
-            <td class="p-2 py-3 min-w-20 truncate max-w-20">
+            <td class="p-2 py-3 min-w-32">
               <Badge
-                :label="activity.priority"
+                :label="activity.status"
                 :theme="getPriorityBadgeColor(activity.priority_integer_value)"
               />
-            </td>
-            <td class="p-2 py-3 w-36 truncate max-w-36">
-              {{ activity.agent_group || __('Not Assigned') }}
-            </td>
-            <td class="p-2 py-3 min-w-40">
-              <div
-                v-if="activity.reason"
-                class="flex items-center gap-1 text-ink-gray-7 truncate w-full"
-                :class="getReasonColorClass(activity.reason)"
-              >
-                <TimerIcon
-                  v-if="activity.reason.type === 'leads'"
-                  class="size-4 flex-shrink-0"
-                />
-                <TicketPlusIcon
-                  v-else-if="activity.reason.type === 'deals'"
-                  class="size-4 flex-shrink-0"
-                />
-                <CheckCircleIcon
-                  v-else-if="activity.reason.type === 'tasks'"
-                  class="size-4 flex-shrink-0"
-                />
-                <span class="truncate">{{ activity.reason.text }}</span>
-              </div>
-              <span
-                v-else
-                class="text-ink-gray-4 truncate inline-block w-full align-bottom"
-                >{{ __('No reason') }}</span
-              >
             </td>
           </tr>
         </tbody>
@@ -93,16 +58,10 @@
             <td class="p-2 py-3 w-full max-w-0">
               <div class="h-4 w-full bg-surface-gray-1 rounded-sm max-w-full" />
             </td>
-            <td class="p-2 py-3 min-w-14">
+            <td class="p-2 py-3 min-w-24">
               <div class="h-4 w-full bg-surface-gray-1 rounded-sm" />
             </td>
-            <td class="p-2 py-3 min-w-21">
-              <div class="h-4 w-full bg-surface-gray-1 rounded-sm" />
-            </td>
-            <td class="p-2 py-3 min-w-28">
-              <div class="h-4 w-full bg-surface-gray-1 rounded-sm" />
-            </td>
-            <td class="p-2 py-3 min-w-40">
+            <td class="p-2 py-3 min-w-32">
               <div class="h-4 w-full bg-surface-gray-1 rounded-sm" />
             </td>
           </tr>
@@ -152,10 +111,8 @@ import {
 } from 'frappe-ui'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import TimerIcon from '~icons/lucide/timer'
-import TicketPlusIcon from '~icons/lucide/ticket-plus'
-import CheckCircleIcon from '~icons/lucide/check-circle'
 import EmptyState2 from '../ListViews/EmptyState2.vue'
+import { formatDate } from '@/utils'
 
 const router = useRouter()
 

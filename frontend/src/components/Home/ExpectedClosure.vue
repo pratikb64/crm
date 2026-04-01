@@ -10,7 +10,7 @@
     </div>
     <div
       v-if="isForecastingEnabled"
-      class="text-xl font-bold text-gray-900 mb-2"
+      class="text-xl font-bold text-ink-gray-7 mb-2"
     >
       {{ formattedActual }} / {{ formattedProjected }}
     </div>

@@ -6,7 +6,7 @@
     <template #right-header>
       <div class="flex items-center gap-2">
         <Button
-          v-if="layout.length > 0 && !editing"
+          v-if="layout.length > 0 && !isEditing"
           :label="__('Refresh')"
           variant="subtle"
           :icon-left="LucideRefreshCcw"
@@ -14,7 +14,7 @@
           @click="agentDashboard.reload({ reset_layout: false })"
         />
         <Button
-          v-if="editing && isDashboardModified"
+          v-if="isEditing && isDashboardModified"
           :label="__('Reset')"
           variant="subtle"
           :icon-left="LucideUndo2"
@@ -23,7 +23,7 @@
         />
         <!-- v-if="editing || isDirty" -->
         <Button
-          v-if="editing || isDirty"
+          v-if="isEditing || isDirty"
           :label="__('Save')"
           variant="subtle"
           :disabled="!isDirty"
@@ -31,7 +31,7 @@
           @click="onSave"
         />
         <Button
-          v-if="layout.length > 0 && !editing"
+          v-if="layout.length > 0 && !isEditing"
           :label="__('Edit')"
           variant="subtle"
           :iconLeft="LucidePenLine"
@@ -39,7 +39,7 @@
           @click="onEdit"
         />
         <Button
-          v-if="editing"
+          v-if="isEditing"
           :label="__('Cancel')"
           variant="subtle"
           :disabled="isLoading"
@@ -95,10 +95,10 @@
           <GridLayout
             v-if="!agentDashboard.loading && layout.length > 0"
             class="h-fit w-full"
-            :class="[editing ? 'mb-[20rem] !select-none' : '']"
+            :class="[isEditing ? 'mb-[20rem] !select-none' : '']"
             :cols="60"
             :rowHeight="14"
-            :disabled="!editing"
+            :disabled="!isEditing"
             :modelValue="layout.map((item) => item.layout)"
             @update:modelValue="onLayoutUpdate"
           >
@@ -109,7 +109,7 @@
                 <div
                   class="flex h-full w-full items-center justify-center"
                   :class="
-                    editing
+                    isEditing
                       ? 'pointer-events-none  [&>div:first-child]:rounded [&>div:first-child]:group-hover:ring-2 [&>div:first-child]:group-hover:ring-outline-gray-2'
                       : ''
                   "
@@ -121,7 +121,7 @@
                   />
                 </div>
                 <div
-                  v-if="editing"
+                  v-if="isEditing"
                   class="flex absolute right-0 top-0 bg-surface-gray-6 rounded cursor-pointer opacity-0 group-hover:opacity-100"
                 >
                   <div
@@ -150,7 +150,7 @@ import {
   GridLayout,
   toast,
 } from 'frappe-ui'
-import { computed, provide, ref, watch } from 'vue'
+import { computed, provide, ref } from 'vue'
 import ChartItem from '../components/Home/ChartItem.vue'
 import { usersStore } from '@/stores/users'
 import LucidePenLine from '~icons/lucide/pen-line'
@@ -158,7 +158,7 @@ import LucideRefreshCcw from '~icons/lucide/refresh-ccw'
 import LucideUndo2 from '~icons/lucide/undo-2'
 
 const { getUser } = usersStore()
-const editing = ref(false)
+const isEditing = ref(false)
 const layout = ref([])
 const oldLayout = ref([])
 
@@ -192,6 +192,7 @@ const agentDashboard = createResource({
   },
   onSuccess(data) {
     layout.value = data.layout
+    oldLayout.value = JSON.parse(JSON.stringify(layout.value))
   },
 })
 
@@ -340,7 +341,7 @@ const chartsDropdown = computed(() => {
 })
 
 const addChart = (chart, config) => {
-  if (!editing.value) {
+  if (!isEditing.value) {
     onEdit()
   }
   layout.value.unshift({
@@ -367,24 +368,24 @@ const addChart = (chart, config) => {
 const onEdit = () => {
   oldLayout.value = JSON.parse(JSON.stringify(agentDashboard.data.layout))
   layout.value = JSON.parse(JSON.stringify(agentDashboard.data.layout))
-  editing.value = true
+  isEditing.value = true
 }
 
 const onSave = () => {
   if (agentDashboard.data?.dashboard_id) {
     saveDashboard.submit().then(() => {
-      editing.value = false
+      isEditing.value = false
     })
   } else {
     createDashboard.submit().then(() => {
-      editing.value = false
+      isEditing.value = false
     })
   }
 }
 
 const onCancel = () => {
   layout.value = JSON.parse(JSON.stringify(oldLayout.value))
-  editing.value = false
+  isEditing.value = false
 }
 
 const onReset = () => {
