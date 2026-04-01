@@ -103,8 +103,8 @@ def get_dashboard(reset_layout: bool = False):
 		if hasattr(frappe.get_attr("crm.api.agent_home.agent_home"), method_name):
 			method = getattr(frappe.get_attr("crm.api.agent_home.agent_home"), method_name)
 			# Pass selected_statuses for funnel conversion chart
-			if chart['chart'] == 'funnel_conversion' and chart.get('selected_statuses'):
-				chart["data"] = method(statuses=chart.get('selected_statuses'))
+			if chart["chart"] == "funnel_conversion" and chart.get("selected_statuses"):
+				chart["data"] = method(statuses=chart.get("selected_statuses"))
 			else:
 				chart["data"] = method()
 		else:
@@ -400,7 +400,7 @@ def get_deal_statuses():
 	)
 
 	result = [{"label": status["deal_status"], "value": status["name"]} for status in statuses]
-	
+
 	return result
 
 
@@ -446,8 +446,7 @@ def get_deals_by_stage(stages: list | None = None):
 
 	# Build complete list with all statuses (including ones with 0 value)
 	formatted_result = [
-		{"label": status, "value": values_by_status.get(status, 0)}
-		for status in all_status_names
+		{"label": status, "value": values_by_status.get(status, 0)} for status in all_status_names
 	]
 
 	# Sort by value descending to get top stages
@@ -458,13 +457,13 @@ def get_deals_by_stage(stages: list | None = None):
 		# Take top 3 and combine the rest as 'Others'
 		top_3 = formatted_result[:3]
 		others_value = sum(item["value"] for item in formatted_result[3:])
-		return top_3 + [{"label": "Others", "value": round(others_value, 2)}]
+		return [*top_3, {"label": "Others", "value": round(others_value, 2)}]
 
 	# For 4 or fewer stages, still group remaining as Others if there are more than 3
 	if len(formatted_result) == 4:
 		top_3 = formatted_result[:3]
 		others_value = formatted_result[3]["value"]
-		return top_3 + [{"label": "Others", "value": round(others_value, 2)}]
+		return [*top_3, {"label": "Others", "value": round(others_value, 2)}]
 
 	# For 3 or fewer stages, pad with empty stages to always show 4 items (3 + Others)
 	while len(formatted_result) < 3:
@@ -494,9 +493,7 @@ def get_expected_closure():
 		.join(CRMDealStatus)
 		.on(CRMDeal.status == CRMDealStatus.name)
 		.select(
-			Sum(
-				IfNull(CRMDeal.deal_value, 0) * IfNull(CRMDeal.exchange_rate, 1)
-			).as_("actual"),
+			Sum(IfNull(CRMDeal.deal_value, 0) * IfNull(CRMDeal.exchange_rate, 1)).as_("actual"),
 		)
 		.where(CRMDealStatus.type == "Won")
 		.where(CRMDeal.closed_date >= from_date)
@@ -510,9 +507,7 @@ def get_expected_closure():
 		.join(CRMDealStatus)
 		.on(CRMDeal.status == CRMDealStatus.name)
 		.select(
-			Sum(
-				IfNull(CRMDeal.expected_deal_value, 0) * IfNull(CRMDeal.exchange_rate, 1)
-			).as_("projected"),
+			Sum(IfNull(CRMDeal.expected_deal_value, 0) * IfNull(CRMDeal.exchange_rate, 1)).as_("projected"),
 		)
 		.where(CRMDealStatus.type.notin(["Lost"]))
 		.where(Date(CRMDeal.expected_closure_date).between(from_date, to_date))

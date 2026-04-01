@@ -73,7 +73,7 @@
 
 <script setup>
 import { createResource, ECharts, MultiSelect } from 'frappe-ui'
-import { computed, onMounted, ref, nextTick, watch } from 'vue'
+import { computed, inject, onMounted, ref, nextTick } from 'vue'
 import EmptyState2 from '../ListViews/EmptyState2.vue'
 
 const props = defineProps({
@@ -87,7 +87,8 @@ const props = defineProps({
   },
 })
 
-const emit = defineEmits(['update:selectedStatuses'])
+const dashboardData = inject('dashboardData')
+console.log('🚀 ~ dashboardData:', dashboardData)
 
 const colors = computed(() => {
   const count = chartConfig.value?.length || 5
@@ -141,7 +142,15 @@ const chartConfig = computed(() => {
 
 // Methods
 const onStatusSelectionChange = async () => {
-  emit('update:selectedStatuses', selectedStatuses.value)
+  // Update selected_statuses directly on the layout item
+  if (dashboardData?.value) {
+    const funnelItem = dashboardData.value.find(
+      (item) => item.chart === 'funnel_conversion',
+    )
+    if (funnelItem) {
+      funnelItem.selected_statuses = selectedStatuses.value
+    }
+  }
   // Fetch new data when statuses change
   if (selectedStatuses.value.length > 0) {
     fetchFunnelConversionData()
@@ -217,18 +226,12 @@ const chartOptions = computed(() => {
           const minBarHeight = maxValue * 0.06
           const nextVal = Math.max(val - minBarHeight, 0)
 
-          // width of a category column
           const width = api.size([1, 0])[0]
 
-          // center of the category
           const cx = api.coord([params.dataIndex, 0])[0]
-
-          // left and right bounds
-          // To ensure they perfectly align with the text border-r (which separates equally), width/2 logic correctly fills the grid cell
           const x = cx - width / 2
           const nextX = cx + width / 2
 
-          // y values
           const y1 = api.coord([0, val])[1]
           const y2 = api.coord([0, nextVal])[1]
           const yBottom = api.coord([0, 0])[1]
@@ -322,18 +325,4 @@ onMounted(() => {
     })
   }
 })
-
-// Watch for changes in props.selectedStatuses
-watch(
-  () => props.selectedStatuses,
-  (newStatuses) => {
-    if (
-      JSON.stringify(newStatuses) !== JSON.stringify(selectedStatuses.value)
-    ) {
-      selectedStatuses.value = newStatuses
-      fetchFunnelConversionData()
-    }
-  },
-  { deep: true },
-)
 </script>

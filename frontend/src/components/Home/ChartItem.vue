@@ -8,10 +8,6 @@
       v-else-if="item.chart === 'funnel_conversion'"
       :data="item.data"
       :selected-statuses="item.selected_statuses"
-      @update:selected-statuses="
-        (event) =>
-          $emit('update:selected-statuses', { index: index, statuses: event })
-      "
     />
     <DealsByStage
       v-else-if="item.chart === 'deals_by_stage'"
@@ -50,6 +46,4 @@ defineProps({
     required: true,
   },
 })
-
-defineEmits(['update:selected-statuses'])
 </script>

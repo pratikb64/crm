@@ -118,7 +118,6 @@
                     :item="layout[index]"
                     :index="index"
                     @update:item="layout[index] = $event"
-                    @update:selected-statuses="onStatusSelectionChange"
                   />
                 </div>
                 <div
@@ -193,7 +192,6 @@ const agentDashboard = createResource({
   },
   onSuccess(data) {
     layout.value = data.layout
-    oldLayout.value = JSON.parse(JSON.stringify(data.layout))
   },
 })
 
@@ -230,7 +228,6 @@ const isDashboardModified = computed(() => {
   return JSON.stringify(_layout) !== JSON.stringify(defaultLayout)
 })
 
-provide('agentDashboard', agentDashboard)
 provide('dashboardData', layout)
 
 const createDashboard = createResource({
@@ -368,6 +365,8 @@ const addChart = (chart, config) => {
 }
 
 const onEdit = () => {
+  oldLayout.value = JSON.parse(JSON.stringify(agentDashboard.data.layout))
+  layout.value = JSON.parse(JSON.stringify(agentDashboard.data.layout))
   editing.value = true
 }
 
@@ -398,15 +397,5 @@ const onLayoutUpdate = (newLayout) => {
   layout.value.forEach((item, idx) => {
     item.layout = newLayout[idx]
   })
-}
-
-const onStatusSelectionChange = (event) => {
-  // Update the selected_statuses for the funnel_conversion chart
-  const funnelChart = layout.value.find(
-    (item) => item.chart === 'funnel_conversion',
-  )
-  if (funnelChart) {
-    funnelChart.selected_statuses = event.statuses
-  }
 }
 </script>
